@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# anythinginanykeys
 
-## Getting Started
+## 開発環境 (Docker)
 
-First, run the development server:
+このプロジェクトは Docker Compose を使用して開発環境を構築・実行できます。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 起動方法
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1.  PostgreSQL データベースがローカルまたは別の Docker コンテナで稼働していることを確認してください。(`docker-compose.yml` でデータベースサービスを定義している場合は不要です)。
+2.  `.env` ファイルに必要な環境変数 (特に `DATABASE_URL`) が設定されていることを確認してください。
+3.  以下のコマンドを実行します。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    ```bash
+    docker-compose up --build
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+これにより、依存関係のインストール、Prisma Client の生成、データベースマイグレーションの適用、Next.js 開発サーバーの起動が自動で行われます。アプリケーションは `http://localhost:3000` でアクセス可能になります。
 
-## Learn More
+### 動作の仕組み
 
-To learn more about Next.js, take a look at the following resources:
+`docker-compose up` を実行すると、以下の処理が順に行われます。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1.  `Dockerfile` に基づいて Docker イメージがビルドされます。
+    *   Node.js 環境のセットアップ
+    *   npm 依存関係のインストール
+    *   Prisma Client の生成 (`npx prisma generate`)
+2.  コンテナが起動します。
+3.  `entrypoint.sh` スクリプトが実行されます。
+    *   データベースマイグレーションが適用されます (`npx prisma migrate dev`)。
+4.  Next.js 開発サーバーが起動します (`npm run dev`)。
