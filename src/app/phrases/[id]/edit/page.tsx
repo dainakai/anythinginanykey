@@ -1,148 +1,95 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // Import hooks for route params and navigation
-import { parseAbcNotation, AbcHeader } from '@/lib/abcParser';
-import dynamic from 'next/dynamic';
+import { useRouter, useParams } from 'next/navigation';
+import AbcNotationRenderer from '@/components/AbcNotationRenderer';
+import { Tag } from '@prisma/client';
 
-// Dynamically import the renderer component, disabling SSR
-const AbcNotationRenderer = dynamic(() => import('@/components/AbcNotationRenderer'), {
-  ssr: false,
-  loading: () => <p>Loading renderer...</p> // Optional loading indicator
-});
-
-// Define type for the fetched phrase data (adjust based on actual API response)
-interface PhraseData {
-    id: string;
-    abcNotation: string;
-    comment: string | null;
-    tags: { name: string }[]; // Assuming API returns tags like this
-    // Add other relevant fields if needed
-}
-
-const EditPhrasePage: React.FC = () => {
+export default function EditPhrasePage() {
   const router = useRouter();
   const params = useParams();
-  const phraseId = params?.id as string; // Get phrase ID from route
+  const phraseId = params.id as string;
 
-  // State for form fields
-  const [abcInput, setAbcInput] = useState<string>(''); // Initialize empty
-  const [comment, setComment] = useState<string>('');
-  const [tagsInput, setTagsInput] = useState<string>('');
+  const [abcNotation, setAbcNotation] = useState('');
+  const [comment, setComment] = useState('');
+  const [tags, setTags] = useState(''); // Comma-separated tags
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
 
-  // State for validation and submission
-  const [parsedHeader, setParsedHeader] = useState<AbcHeader | null>(null);
-  const [parseError, setParseError] = useState<string>('');
-  const [renderError, setRenderError] = useState<Error | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [submitError, setSubmitError] = useState<string>('');
-
-  // State for loading phrase data
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string>('');
-
-  // --- Fetch existing phrase data --- (Runs once on mount)
-  useEffect(() => {
-    if (!phraseId) {
-      setLoadError('Invalid Phrase ID.');
-      setIsLoading(false);
-      return;
+  // Fetch available tags for datalist suggestions
+  const fetchAvailableTags = useCallback(async () => {
+    try {
+      const response = await fetch('/api/tags');
+      if (!response.ok) throw new Error('Failed to fetch tags');
+      const data: Tag[] = await response.json();
+      setAvailableTags(data);
+    } catch (err) {
+      console.error('Error fetching available tags:', err);
     }
+  }, []);
 
-    const fetchPhrase = async () => {
-      setIsLoading(true);
-      setLoadError('');
-      try {
-        const response = await fetch(`/api/phrases/${phraseId}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          if (response.status === 403 || response.status === 404) {
-            throw new Error('フレーズが見つからないか、アクセス権がありません。');
-          } else {
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-          }
-        }
-        const data: PhraseData = await response.json();
-
-        // Set form state with fetched data
-        setAbcInput(data.abcNotation || '');
-        setComment(data.comment || '');
-        setTagsInput(data.tags?.map(tag => tag.name).join(', ') || ''); // Join tag names for input
-
-      } catch (error) {
-        console.error('Error fetching phrase:', error);
-        setLoadError(`データの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-      } finally {
-        setIsLoading(false);
+  // Fetch existing phrase data
+  const fetchPhraseData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/phrases/${phraseId}`);
+      if (!response.ok) {
+        if (response.status === 404) throw new Error('Phrase not found');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
-
-    fetchPhrase();
+      const data = await response.json();
+      setAbcNotation(data.abcNotation);
+      setComment(data.comment || '');
+      setTags(data.tags.map((tag: Tag) => tag.name).join(', ')); // Convert tags array to comma-separated string
+    } catch (err: unknown) {
+      console.error('Failed to fetch phrase data:', err);
+      const errorMessage = err instanceof Error ? err.message : (err ? String(err) : 'Unknown error');
+      setError(`フレーズデータの読み込みに失敗しました: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
   }, [phraseId]);
 
-  // Parses header, does not validate syntax deeply
-  const handleValidation = useCallback(() => {
-    setParseError(''); // Reset parse error initially
-    setParsedHeader(null);
-    setRenderError(null); // Also reset render error, it will be set by the renderer
+  useEffect(() => {
+    if (phraseId) {
+      fetchPhraseData();
+      fetchAvailableTags();
+    }
+  }, [phraseId, fetchPhraseData, fetchAvailableTags]);
 
-    if (!abcInput.trim()) {
-        // If input is empty or only whitespace, clear header and return
-        setParsedHeader(null);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    // Validate using previewError state from AbcNotationRenderer
+    if (previewError) {
+        setError(`ABC Notation preview has an error: ${previewError}. Please correct it before saving.`);
+        setIsSubmitting(false);
+        return;
+    }
+    // Also check if abcNotation is empty, although required attribute helps
+    if (!abcNotation.trim()) {
+        setError('ABC Notation cannot be empty.');
+        setIsSubmitting(false);
         return;
     }
 
     try {
-      const result = parseAbcNotation(abcInput);
-      if (result) {
-        setParsedHeader(result.header);
-      } else {
-        // This case might be less likely now, but keep for unexpected issues
-        setParseError('Failed to process ABC notation.');
-      }
-    } catch (error) {
-      // Catch internal errors during basic parsing
-      console.error('Internal parsing error:', error);
-      setParseError(`An internal error occurred during parsing: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }, [abcInput]);
+      // Split the comma-separated tags string into an array of non-empty strings
+      const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
-  useEffect(() => {
-    handleValidation();
-  }, [handleValidation]);
-
-  // Memoize handleRenderError to prevent infinite loops
-  const handleRenderError = useCallback((error: Error | null) => {
-    // Optimize state updates: only update if the value actually changes
-    setRenderError(currentError => {
-      // Basic comparison for Error objects (might need refinement if error identity changes)
-      if (currentError?.message === error?.message) return currentError;
-      return error;
-    });
-    if (error) {
-      setParseError(''); // Clear internal parse error if render error occurs
-    }
-  }, []);
-
-  // Validity now primarily depends on the renderError and submission status
-  const isValidForSubmission = !renderError && !isSubmitting && !isLoading && !loadError;
-
-  const handleUpdate = async () => {
-    if (!isValidForSubmission || !phraseId) {
-      console.error("Validation failed, already submitting, or missing ID. Cannot update.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError('');
-
-    const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
-
-    try {
-      const response = await fetch(`/api/phrases/${phraseId}`, { // Use PUT and include ID
-        method: 'PUT', // Use PUT method
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ abcNotation: abcInput, comment, tags }),
+      const response = await fetch(`/api/phrases/${phraseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Send the tagArray instead of the tags string
+        body: JSON.stringify({ abcNotation, comment, tags: tagArray }),
       });
 
       if (!response.ok) {
@@ -150,124 +97,128 @@ const EditPhrasePage: React.FC = () => {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const updatedPhrase = await response.json();
-      console.log('Phrase updated successfully:', updatedPhrase);
-      alert(`フレーズが更新されました！`);
-      // Optionally redirect after update
-      // router.push(`/phrases/${phraseId}`); // Redirect to detail page (if exists)
-      router.back(); // Or simply go back
+      // Redirect to the phrase detail page or dashboard after update
+      router.push(`/phrases/${phraseId}`);
+      // router.push('/dashboard');
 
-    } catch (error) {
-      console.error('Error updating phrase:', error);
-      setSubmitError(`更新中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
+    } catch (err: unknown) {
+      console.error('Failed to update phrase:', err);
+      const errorMessage = err instanceof Error ? err.message : (err ? String(err) : 'Unknown error');
+      setError(`フレーズの更新に失敗しました: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };
 
-  // --- Render Logic ---
   if (isLoading) {
-    return <div className="container mx-auto p-4">読み込み中...</div>;
+    return <div className="container mx-auto px-4 py-8 text-center">読み込み中...</div>;
   }
 
-  if (loadError) {
-    return <div className="container mx-auto p-4 text-red-500">エラー: {loadError}</div>;
+  if (error && error.includes('Phrase not found')) {
+      return (
+          <div className="container mx-auto px-4 py-8 text-center">
+              <h1 className="text-2xl font-bold mb-4">エラー</h1>
+              <p className="text-red-600 mb-4">指定されたフレーズが見つかりませんでした。</p>
+              <Link href="/dashboard" className="text-blue-600 hover:underline">
+                  ダッシュボードに戻る
+              </Link>
+          </div>
+      );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">フレーズの編集</h1>
-
-      {/* Use handleUpdate for form submission */}
-      <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}>
-        {/* Form fields are mostly the same, just populated with initial data */}
-        <div className="mb-6">
-          <label htmlFor="abcInput" className="block text-xl font-semibold mb-2">ABC Notation:</label>
-          <textarea
-            id="abcInput"
-            className="w-full h-60 p-2 border rounded font-mono text-sm"
-            value={abcInput}
-            onChange={(e) => setAbcInput(e.target.value)}
-            placeholder="X:1\nT:Title\nM:4/4\nL:1/8\nK:C\nCDEF|GABc|"
-            required
-            disabled={isLoading} // Disable while loading initial data
-          />
-        </div>
-
-        <div className="mb-6">
-          <label htmlFor="comment" className="block text-xl font-semibold mb-2">コメント:</label>
-          <textarea
-            id="comment"
-            className="w-full h-20 p-2 border rounded text-sm"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="フレーズの説明や使い方のメモなど"
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className="mb-6">
-          <label htmlFor="tagsInput" className="block text-xl font-semibold mb-2">タグ (カンマ区切り):</label>
-          <input
-            type="text"
-            id="tagsInput"
-            className="w-full p-2 border rounded text-sm"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="例: Major 2-5-1, Bebop Scale, Lick"
-            disabled={isLoading}
-          />
-        </div>
-
-        {(parseError || renderError || submitError) && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
-            {/* Display internal parse error only if no render error exists */}
-            {parseError && !renderError && <p><strong>内部パースエラー:</strong> {parseError}</p>}
-            {renderError && <p><strong>楽譜レンダリングエラー:</strong> {renderError.message}</p>}
-            {submitError && <p><strong>更新エラー:</strong> {submitError}</p>}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">フレーズを編集</h1>
+      {error && !error.includes('Phrase not found') && <p className="text-red-500 bg-red-100 p-3 rounded mb-4">エラー: {error}</p>}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left Column: Editor and Metadata */}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="abcNotation" className="block text-sm font-medium text-gray-700 mb-1">
+              ABC Notation
+            </label>
+            <textarea
+              id="abcNotation"
+              rows={15}
+              value={abcNotation}
+              onChange={(e) => setAbcNotation(e.target.value)}
+              required
+              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 font-mono"
+            />
+            {previewError && <p className="text-xs text-red-600 mt-1">{previewError}</p>}
           </div>
-        )}
 
-        {/* Display parsed header only if no render error and header exists */}
-        {!renderError && parsedHeader && (
-          <div className="mb-6 p-4 border rounded bg-gray-50">
-            <h2 className="text-xl font-semibold mb-2">Parsed Header Information:</h2>
-            <pre className="text-sm">{JSON.stringify(parsedHeader, null, 2)}</pre>
+          <div>
+            <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
+              コメント (任意)
+            </label>
+            <input
+              type="text"
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+            />
           </div>
-        )}
 
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Preview:</h2>
-          <div className="p-4 border rounded min-h-[100px]">
-            {/* Pass the handleRenderError callback */}
-            <AbcNotationRenderer abcNotation={abcInput} onError={handleRenderError} />
+          <div>
+            <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+              タグ (カンマ区切り, 任意)
+            </label>
+            <input
+              type="text"
+              id="tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+              list="available-tags-datalist" // Link input to datalist
+            />
+            {/* Datalist for tag suggestions */}
+            <datalist id="available-tags-datalist">
+                {availableTags.map(tag => (
+                    <option key={tag.id} value={tag.name} />
+                ))}
+            </datalist>
+            <p className="text-xs text-gray-500 mt-1">既存のタグ名を入力し始めると候補が表示されます。新しいタグも自由に追加できます。</p>
           </div>
-        </div>
 
-        {/* Update Button */}
-        <div className="mt-6">
-          <button
-            type="submit"
-            className={`px-4 py-2 rounded ${isValidForSubmission ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-            disabled={!isValidForSubmission}
-          >
-            {isSubmitting ? '更新中...' : '更新'}
-          </button>
-           <button
+           <div className="flex justify-end gap-3 mt-4">
+             <button
                 type="button"
-                onClick={() => router.back()} // Go back without saving
-                className="ml-4 px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                disabled={isSubmitting}
-            >
+                onClick={() => router.back()} // Go back to previous page (likely phrase detail)
+                className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
                 キャンセル
-            </button>
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !!previewError}
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? '更新中...' : '変更を保存'}
+              </button>
+           </div>
+        </div>
+
+        {/* Right Column: Real-time Preview */}
+        <div className="space-y-4">
+            <h2 className="text-lg font-medium text-gray-900">プレビュー</h2>
+            <div className="p-4 border rounded-md bg-white min-h-[200px]">
+                {!previewError && abcNotation ? (
+                    <AbcNotationRenderer
+                        key={abcNotation} // Re-render when abcNotation changes
+                        abcNotation={abcNotation}
+                        renderParams={{ responsive: 'resize' }}
+                        onError={(err) => {
+                             // Check if err is not null before accessing message
+                            setPreviewError(err ? `プレビューエラー: ${err.message}` : null);
+                        }}
+                    />
+                ) : (
+                    <p className="text-gray-500 italic">{previewError || "ABC Notation を入力してください"}</p>
+                )}
+            </div>
         </div>
       </form>
-
     </div>
   );
-};
-
-export default EditPhrasePage;
-
-
+}

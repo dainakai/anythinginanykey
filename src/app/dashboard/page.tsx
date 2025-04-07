@@ -28,6 +28,9 @@ interface FilterInfo {
     availableTags: string[];
 }
 
+// Special value for the "untagged" filter
+const UNTAGGED_FILTER_VALUE = '__untagged__';
+
 // Extracted content that uses useSearchParams into its own component
 function DashboardContent() {
   const router = useRouter();
@@ -117,12 +120,18 @@ function DashboardContent() {
   // The actual JSX structure
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-3xl font-bold">マイフレーズライブラリ</h1>
-          {/* Add New Phrase Button */}
-          <Link href="/phrases/new" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            新しいフレーズを作成
-          </Link>
+          <div className="flex items-center gap-4">
+              {/* Link to Tag Management */}
+              <Link href="/dashboard/tags" className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                タグを管理
+              </Link>
+              {/* Add New Phrase Button */}
+              <Link href="/phrases/new" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                新しいフレーズを作成
+              </Link>
+          </div>
       </div>
 
       {/* Filter and Sort Controls */}
@@ -136,6 +145,9 @@ function DashboardContent() {
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
           >
             <option value="">すべてのタグ</option>
+            {/* Add the "Untagged" option */}
+            <option value={UNTAGGED_FILTER_VALUE}>タグなし</option>
+            {/* Separate divider or style if desired */}
             {filters?.availableTags?.map(tag => (
               <option key={tag} value={tag}>{tag}</option>
             ))}

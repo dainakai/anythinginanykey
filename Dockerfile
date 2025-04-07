@@ -7,7 +7,11 @@ WORKDIR /app
 
 # Copy only package files first
 COPY package*.json ./
-# Install dependencies using cache
+
+# Set NODE_ENV to development to install devDependencies
+ENV NODE_ENV=development
+
+# Install dependencies including devDependencies
 RUN npm install --legacy-peer-deps
 
 # Copy prisma schema

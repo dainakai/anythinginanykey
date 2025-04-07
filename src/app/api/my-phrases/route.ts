@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'; // Import prisma directly
 import { Prisma } from '@prisma/client';
 
 const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
+const UNTAGGED_FILTER_VALUE = '__untagged__';
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -36,11 +37,19 @@ export async function GET(request: Request) {
   };
 
   if (tagFilter) {
-    whereClause.tags = {
-      some: {
-        name: tagFilter,
-      },
-    };
+    if (tagFilter === UNTAGGED_FILTER_VALUE) {
+      // Handle the special case for untagged phrases
+      whereClause.tags = {
+        none: {}, // Select phrases with no associated tags
+      };
+    } else {
+      // Original logic for filtering by a specific tag name
+      whereClause.tags = {
+        some: {
+          name: tagFilter,
+        },
+      };
+    }
   }
 
   try {
