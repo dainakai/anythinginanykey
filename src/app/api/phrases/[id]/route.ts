@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { auth } from "@/auth";
 import { parseAbcNotation } from '@/lib/abcParser';
@@ -6,10 +6,10 @@ import { parseAbcNotation } from '@/lib/abcParser';
 const prisma = new PrismaClient();
 
 export async function GET(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
-    await request.text(); // Read body/end stream to allow accessing params safely
+    // await request.text(); // No longer needed with NextRequest?
     const session = await auth();
     const phraseId = params.id;
 
@@ -55,10 +55,10 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  await request.text(); // Read body/end stream to allow accessing params safely
+  // await request.text(); // No longer needed with NextRequest?
   const session = await auth();
 
   if (!session || !session.user?.id) {
@@ -118,11 +118,10 @@ export async function DELETE(
 }
 
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     // For PUT, we need the body, so request.json() implicitly handles this.
-    // No need to add await request.text() here if request.json() is called before accessing params.
     const session = await auth();
 
     if (!session || !session.user?.id) {
