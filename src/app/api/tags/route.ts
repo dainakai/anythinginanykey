@@ -126,8 +126,8 @@ export async function POST(request: Request) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // Explicitly handle unique constraint violation (race condition or case difference)
       if (error.code === 'P2002' && error.meta?.target === 'Tag_name_key') {
-         // Fetch the tag that caused the conflict and return it
-         const conflictingTag = await prisma.tag.findUnique({ where: { name: name.trim() } });
+         // Fetch the tag that caused the conflict using the trimmed tagName
+         const conflictingTag = await prisma.tag.findUnique({ where: { name: tagName } });
          if (conflictingTag) {
             return NextResponse.json(conflictingTag, { status: 200 }); // Return the conflicting tag
          } else {
