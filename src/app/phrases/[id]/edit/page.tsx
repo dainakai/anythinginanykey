@@ -109,7 +109,6 @@ const EditPhrasePage: React.FC = () => {
 
   useEffect(() => {
     handleValidation();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleValidation]);
 
   // Memoize handleRenderError to prevent infinite loops

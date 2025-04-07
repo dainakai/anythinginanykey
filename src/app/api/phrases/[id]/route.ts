@@ -103,7 +103,13 @@ export async function DELETE(
 
   } catch (error) {
     console.error(`Error deleting phrase ${phraseId} for user ${userId}:`, error);
-    if (error instanceof Error && error.name === 'PrismaClientKnownRequestError' && (error as any).code === 'P2025') {
+    // Check if it's a Prisma error indicating record not found using a type guard
+    if (
+        error instanceof Error &&
+        'code' in error && 
+        typeof error.code === 'string' && 
+        error.code === 'P2025'
+    ) {
         // Handle case where record to delete is not found (already deleted, race condition)
         return NextResponse.json({ error: 'Phrase not found' }, { status: 404 });
     }

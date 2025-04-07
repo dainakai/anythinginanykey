@@ -59,7 +59,6 @@ c B A G | F E D C |`;
 
   useEffect(() => {
     handleValidation();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleValidation]);
 
   // Memoize handleRenderError to prevent infinite loops
