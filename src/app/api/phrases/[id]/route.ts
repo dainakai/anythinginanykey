@@ -7,11 +7,11 @@ const prisma = new PrismaClient();
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    context: { params: { id: string } }
 ) {
     await request.text(); // Read body/end stream to allow accessing params safely
     const session = await auth();
-    const phraseId = params.id;
+    const phraseId = context.params.id;
 
     if (!phraseId) {
         return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
@@ -56,7 +56,7 @@ export async function GET(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   await request.text(); // Read body/end stream to allow accessing params safely
   const session = await auth();
@@ -65,7 +65,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
-  const phraseId = params.id;
+  const phraseId = context.params.id;
 
   if (!phraseId) {
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
@@ -119,7 +119,7 @@ export async function DELETE(
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    context: { params: { id: string } }
 ) {
     // For PUT, we need the body, so request.json() implicitly handles this.
     // No need to add await request.text() here if request.json() is called before accessing params.
@@ -129,7 +129,7 @@ export async function PUT(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const userId = session.user.id;
-    const phraseId = params.id;
+    const phraseId = context.params.id;
 
     if (!phraseId) {
         return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
