@@ -6,10 +6,10 @@ import { Prisma } from '@prisma/client';
 // DELETE /api/tags/[id] - Delete a user-defined tag
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  const tagId = params.id;
+  const { id: tagId } = await params;
 
   if (!session?.user?.id) {
     // Require authentication to delete tags
