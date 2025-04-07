@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "target": "es2017", // Or a suitable target for your Node.js version
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "./dist", // Specify output directory relative to this tsconfig
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+    // Include other options from your main tsconfig.json if needed,
+    // ensuring compatibility with ts-node and CommonJS execution.
+  },
+  "include": ["seed.ts"],
+  "exclude": ["node_modules"]
+}

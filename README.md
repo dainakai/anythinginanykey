@@ -1,55 +1,111 @@
-# anythinginanykeys
+# Anything in Anykeys
 
-## 開発環境 (Docker)
+ジャズなどのインプロヴィゼーションを行うミュージシャン向けのフレーズ管理・共有サービス「Anything in Anykeys」のリポジトリです。
 
-このプロジェクトは Docker Compose を使用して開発環境を構築・実行できます。
+## 特徴
 
-### 起動方法
+- ABC notation形式でのフレーズ登録・管理
+- 全12キーへの自動移調表示
+- タグによるフレーズの分類・検索
+- ユーザー定義タグの管理 (追加・削除)
+- プリセットタグの提供
+- Googleアカウントによる認証
 
-1.  プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定します。サンプルとして `.env.example` があればそれをコピーして編集してください。
-    *   `DATABASE_URL`: PostgreSQL データベースの接続URL (例: `postgresql://user:password@db:5432/mydatabase`)
-    *   `GOOGLE_CLIENT_ID`: Google Cloud Console で取得したクライアント ID
-    *   `GOOGLE_CLIENT_SECRET`: Google Cloud Console で取得したクライアントシークレット
-    *   `NEXTAUTH_SECRET`: `openssl rand -hex 32` などで生成したランダムな文字列
-2.  以下のコマンドを実行します。
+## 技術スタック
 
+- **フレームワーク:** Next.js (App Router)
+- **言語:** TypeScript
+- **データベース:** PostgreSQL
+- **ORM:** Prisma
+- **認証:** NextAuth.js (Auth.js v5)
+- **UI:** Tailwind CSS
+- **楽譜描画:** abcjs
+- **コンテナ:** Docker, Docker Compose
+
+## 開発環境セットアップ
+
+### 必要なもの
+
+- Node.js (v20推奨)
+- Docker Desktop
+- Google Cloud Platformアカウント (OAuth認証情報用)
+
+### 手順
+
+1.  **リポジトリのクローン:**
     ```bash
-    docker compose up --build
+    git clone https://github.com/dainakai/anythinginanykeys.git
+    cd anythinginanykeys
     ```
 
-これにより、依存関係のインストール、Prisma Client の生成、データベースマイグレーションの適用、Next.js 開発サーバーの起動が自動で行われます。アプリケーションは `http://localhost:3000` でアクセス可能になります。
-
-### データベースの確認 (Prisma Studio)
-
-開発中にデータベースの内容を確認するには、Prisma Studio が便利です。
-
-1.  `docker compose up` を実行しているターミナルとは**別のターミナル**を開きます。
-2.  以下のコマンドを実行して、`web` コンテナ内で Prisma Studio を起動します。
-
+2.  **環境変数の設定:**
+    `.env.example` をコピーして `.env` ファイルを作成します。
     ```bash
-    docker compose exec web npx prisma studio
+    cp .env.example .env
     ```
+    `.env` ファイルを開き、以下の項目を設定してください:
+    - `POSTGRES_PASSWORD`: 任意のパスワード (デフォルト: `password`)
+    - `GOOGLE_CLIENT_ID`: Google Cloud Console で取得したクライアントID
+    - `GOOGLE_CLIENT_SECRET`: Google Cloud Console で取得したクライアントシークレット
+    - `NEXTAUTH_SECRET`: 任意のランダムな文字列 (例: `openssl rand -hex 32` で生成)
+    - `NEXTAUTH_URL`: `http://localhost:3000` (ローカル開発環境の場合)
 
-3.  ブラウザで `http://localhost:5555` にアクセスします。
+3.  **Dockerコンテナのビルドと起動:**
+    ```bash
+    docker-compose up --build -d
+    ```
+    初回起動時にはデータベースのマイグレーションが自動的に実行されます。
 
-### 動作の仕組み
+4.  **(初回のみ) プリセットタグの投入:**
+    アプリケーションで共通利用するプリセットタグをデータベースに登録します。
+    ```bash
+    npm run seed
+    ```
+    (このコマンドは Docker コンテナ内で Seed スクリプトを実行します)
 
-`docker compose up` を実行すると、以下の処理が順に行われます。
+5.  **アクセス:**
+    ブラウザで `http://localhost:3000` にアクセスします。
 
-1.  `Dockerfile` に基づいて Docker イメージがビルドされます。
-    *   Node.js 環境のセットアップ
-    *   npm 依存関係のインストール
-    *   Prisma Client の生成 (`npx prisma generate`)
-2.  コンテナが起動します。
-3.  `entrypoint.sh` スクリプトが実行されます。
-    *   データベースマイグレーションが適用されます (`npx prisma migrate dev`)。
-4.  Next.js 開発サーバーが起動します (`npm run dev`)。
+### 便利なコマンド
 
-## 主な機能 (開発中)
+- **コンテナの停止:** `docker-compose down`
+- **データベースのリセット:**
+  ```bash
+  docker-compose down -v # ボリュームごと削除
+  docker-compose up --build -d
+  npm run seed # プリセットタグ再投入
+  ```
+- **Prisma Studio (データベースGUI):**
+  `docker-compose.yml` で `web` サービスのポート `5555` が公開されています。
+  ```bash
+  docker-compose exec web npx prisma studio
+  ```
+  その後、ブラウザで `http://localhost:5555` にアクセスします。
 
-### フレーズ登録
+## 機能概要
 
--   URL: `/phrases/new`
--   ログイン後、ABC Notation 形式でフレーズ、コメント、タグ（カンマ区切り）を入力して登録できます。
--   入力された ABC Notation はリアルタイムでプレビュー表示され、構文エラーやレンダリングエラーがある場合はエラーメッセージが表示され、登録ボタンが無効になります。
--   登録されたフレーズとタグはデータベースに保存されます。
+- **ダッシュボード (`/dashboard`):**
+  - ログインユーザーが登録したフレーズを一覧表示します。
+  - フレーズのページネーション、ソート（新着順/古い順）、タグによるフィルタリング（「タグなし」含む）が可能です。
+  - 各フレーズカードのタグをクリックしてもフィルタリングできます。
+  - 「新しいフレーズを作成」ボタンからフレーズ登録ページへ遷移します。
+  - 「タグを管理」ボタンからタグ管理ページへ遷移します。
+- **フレーズ詳細 (`/phrases/[id]`):**
+  - フレーズの ABC Notation、メタデータ（キー、コメント、タグ等）を表示します。
+  - 全12キーに移調された楽譜を表示します。
+  - 編集ボタン、削除ボタン（未実装）があります。
+- **フレーズ登録 (`/phrases/new`):**
+  - ABC Notation、コメント、タグ（カンマ区切り）を入力して新しいフレーズを作成します。
+  - ABC Notation のリアルタイムプレビューと構文チェックが行われます。
+  - タグ入力時には既存のタグがサジェストされます。
+- **フレーズ編集 (`/phrases/[id]/edit`):**
+  - 既存のフレーズ情報を編集します。
+  - 登録時と同様のプレビュー、バリデーション、タグサジェスト機能があります。
+- **タグ管理 (`/dashboard/tags`):**
+  - プリセットタグとユーザー定義タグを一覧表示します。
+  - 新しいユーザー定義タグを作成できます。
+  - ユーザー定義タグを削除できます（関連するフレーズは削除されません）。
+
+## 今後の開発予定
+
+Issue や `docs/tasks.md` を参照してください。
