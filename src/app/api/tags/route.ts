@@ -87,6 +87,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Declare tagName outside the try block to make it accessible in catch
+  let tagName: string | undefined;
+
   try {
     const { name } = await request.json();
 
@@ -94,7 +97,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Tag name is required and must be a non-empty string' }, { status: 400 });
     }
 
-    const tagName = name.trim();
+    // Assign value to the outer variable
+    tagName = name.trim();
 
     // Check if tag already exists (case-insensitive check might be better)
     // Using Prisma's unique constraint on `name` is the primary defense.
@@ -127,13 +131,15 @@ export async function POST(request: Request) {
       // Explicitly handle unique constraint violation (race condition or case difference)
       if (error.code === 'P2002' && error.meta?.target === 'Tag_name_key') {
          // Fetch the tag that caused the conflict using the trimmed tagName
-         const conflictingTag = await prisma.tag.findUnique({ where: { name: tagName } });
-         if (conflictingTag) {
-            return NextResponse.json(conflictingTag, { status: 200 }); // Return the conflicting tag
-         } else {
-             // Should not happen if P2002 is for name, but handle defensively
-            return NextResponse.json({ error: 'Tag already exists' }, { status: 409 });
+         // Check if tagName was assigned before the error occurred
+         if (tagName) {
+            const conflictingTag = await prisma.tag.findUnique({ where: { name: tagName } });
+            if (conflictingTag) {
+                return NextResponse.json(conflictingTag, { status: 200 }); // Return the conflicting tag
+            }
          }
+         // If tagName is somehow undefined or conflictingTag not found, return generic conflict
+         return NextResponse.json({ error: 'Tag already exists' }, { status: 409 });
       }
     }
     // Handle validation errors or other client errors if necessary
