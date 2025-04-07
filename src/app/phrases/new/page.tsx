@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // import AbcNotationRenderer from '@/components/AbcNotationRenderer'; // Direct import removed
 import { parseAbcNotation, AbcHeader } from '@/lib/abcParser';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
 // Dynamically import the renderer component, disabling SSR
 const AbcNotationRenderer = dynamic(() => import('@/components/AbcNotationRenderer'), {
@@ -12,6 +13,7 @@ const AbcNotationRenderer = dynamic(() => import('@/components/AbcNotationRender
 });
 
 const NewPhrasePage: React.FC = () => {
+  const router = useRouter();
   const initialAbc = `
 X:1
 T: New Phrase Title
@@ -121,6 +123,11 @@ c B A G | F E D C |`;
     }
   };
 
+  const handleCancel = () => {
+    // Navigate back to the dashboard page
+    router.push('/dashboard');
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">フレーズの新規登録</h1>
@@ -186,13 +193,20 @@ c B A G | F E D C |`;
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex gap-4">
           <button
             type="submit"
             className={`px-4 py-2 rounded ${isValidForSubmission ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-            disabled={!isValidForSubmission} // Use the new validity check
+            disabled={!isValidForSubmission}
           >
             {isSubmitting ? '登録中...' : '登録'}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            キャンセル
           </button>
         </div>
       </form> {/* Close form tag */}
