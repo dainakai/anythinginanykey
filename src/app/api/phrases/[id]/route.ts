@@ -5,13 +5,18 @@ import { parseAbcNotation } from '@/lib/abcParser';
 
 const prisma = new PrismaClient();
 
+// Correct type definition for Next.js 15+ route handler context
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
 export async function GET(
     request: NextRequest,
-    context: { params: { id: string } }
+    { params }: RouteContext // Use correct type with Promise
 ) {
     // await request.text();
     const session = await auth();
-    const phraseId = context.params.id;
+    const { id: phraseId } = await params; // Await params to access id
 
     if (!phraseId) {
         return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
@@ -56,7 +61,7 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: RouteContext // Use correct type with Promise
 ) {
 //   await request.text();
   const session = await auth();
@@ -65,7 +70,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
-  const phraseId = context.params.id;
+  const { id: phraseId } = await params; // Await params to access id
 
   if (!phraseId) {
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
@@ -119,7 +124,7 @@ export async function DELETE(
 
 export async function PUT(
     request: NextRequest,
-    context: { params: { id: string } }
+    { params }: RouteContext // Use correct type with Promise
 ) {
     // For PUT, we need the body, so request.json() implicitly handles this.
     const session = await auth();
@@ -128,7 +133,7 @@ export async function PUT(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const userId = session.user.id;
-    const phraseId = context.params.id;
+    const { id: phraseId } = await params; // Await params to access id
 
     if (!phraseId) {
         return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
