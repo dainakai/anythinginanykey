@@ -5,6 +5,51 @@ import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
 
+// Helper function to get semitone offset from C
+// Handles key notations like "C", "Gm", "Bb", "F#m", etc.
+const keyToSemitoneOffset: { [key: string]: number } = {
+    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'Fb': 4, 'E#': 5, 'F': 5,
+    'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11, 'B#': 0
+};
+
+const normalizeKey = (key: string): string => {
+    // Remove minor indicator 'm' and anything after it (e.g., " mix")
+    const baseKey = key.replace(/m.*$/, '').trim();
+    // Handle sharps and flats
+    if (baseKey.endsWith('#')) {
+        return baseKey.slice(0, 2);
+    } else if (baseKey.endsWith('b')) {
+        return baseKey.slice(0, 2);
+    } else {
+        return baseKey.slice(0, 1);
+    }
+};
+
+const getTransposeAmount = (originalKey: string, targetKey: string): number => {
+    const originalNormalized = normalizeKey(originalKey);
+    const targetNormalized = normalizeKey(targetKey);
+
+    const originalOffset = keyToSemitoneOffset[originalNormalized];
+    const targetOffset = keyToSemitoneOffset[targetNormalized];
+
+    if (originalOffset === undefined || targetOffset === undefined) {
+        console.warn(`Could not determine semitone offset for keys: ${originalKey} (${originalNormalized}) or ${targetKey} (${targetNormalized})`);
+        return 0; // Default to no transposition if key is unknown
+    }
+
+    const difference = targetOffset - originalOffset;
+    // Ensure the difference is within the -11 to 11 range if needed,
+    // but abcjs handles larger numbers correctly (wraps around).
+    // difference = difference > 6 ? difference - 12 : difference;
+    // difference = difference < -6 ? difference + 12 : difference;
+    return difference;
+};
+
+// Define the 12 keys for transposition display (using common flats for display)
+const displayKeys = [
+    'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'
+];
+
 // Dynamically import the renderer component, disabling SSR
 const AbcNotationRenderer = dynamic(() => import('@/components/AbcNotationRenderer'), {
     ssr: false,
@@ -179,6 +224,39 @@ const PhraseDetailPage: React.FC = () => {
                     onError={handleRenderError}
                 />
                 {renderError && <p className="text-red-500 mt-2">楽譜の描画エラー: {renderError.message}</p>}
+            </div>
+
+            {/* Section for Transposed Scores */}
+            <div className="mb-8 p-4 border rounded shadow-md bg-white">
+                <h2 className="text-xl font-semibold mb-4">全キー移調表示</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                    {displayKeys.map((targetKey) => {
+                        const transposeAmount = getTransposeAmount(phraseData.originalKey, targetKey);
+                        const renderParams = { visualTranspose: transposeAmount };
+                        // Unique key for React list rendering, incorporating target key
+                        const uniqueKey = `${phraseData.id}-${targetKey}`;
+                        // Remove the Title (T:) line from the ABC notation for transposed versions
+                        const abcNotationWithoutTitle = phraseData.abcNotation.replace(/(^|\n)T:.*\n?/g, '\n');
+                        // Further modify for transposed view: remove time signature (M:)
+                        const abcNotationForTransposed = abcNotationWithoutTitle
+                            .replace(/(^|\n)M:.*\n?/g, '\n'); // Remove M: line
+
+                        return (
+                            <div key={uniqueKey} className="border rounded p-3 bg-gray-50">
+                                <h3 className="text-lg font-medium mb-2">Key: {targetKey}</h3>
+                                <AbcNotationRenderer
+                                    // Using uniqueKey here as well, forces re-render if needed
+                                    key={uniqueKey}
+                                    abcNotation={abcNotationForTransposed} // Use modified ABC string
+                                    renderParams={renderParams}
+                                    engraverParams={{ responsive: 'resize' }} // Keep responsive parameter
+                                    // You might want a specific error handler per transposed score or a collective one
+                                    // onError={(error) => console.error(`Error rendering key ${targetKey}:`, error)}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Section for Metadata */}
