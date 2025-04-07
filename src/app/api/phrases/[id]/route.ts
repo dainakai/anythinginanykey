@@ -25,7 +25,7 @@ export async function GET(
                     select: { name: true } // Only select tag names
                 },
                 user: { // Optionally include user info (be careful with sensitive data)
-                    select: { id: true, name: true, image: true }
+                    select: { id: true, name: true }
                 }
             }
         });
