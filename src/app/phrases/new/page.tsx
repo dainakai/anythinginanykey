@@ -68,7 +68,7 @@ export default function NewPhrasePage() {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const newPhrase = await response.json();
+      // const newPhrase = await response.json(); // Remove unused variable assignment
       // Redirect to the dashboard or the new phrase detail page
       router.push('/dashboard'); // Redirect to dashboard for now
       // router.push(`/phrases/${newPhrase.id}`);
