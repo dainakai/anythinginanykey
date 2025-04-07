@@ -25,82 +25,117 @@ const AbcNotationRenderer: React.FC<AbcNotationRendererProps> = ({
   onError, // Destructure onError prop
 }) => {
   const notationRef = useRef<HTMLDivElement>(null);
-  const [isScriptLoaded, setIsScriptLoaded] = React.useState(false);
+  // const [isScriptLoaded, setIsScriptLoaded] = React.useState(false); // REMOVED isScriptLoaded state
 
   useEffect(() => {
-    // Check if script is loaded and window.ABCJS is available
-    // Rely on the global type declaration in types/globals.d.ts
-    if (isScriptLoaded && typeof window !== 'undefined' && window.ABCJS) {
-      const ABCJS = window.ABCJS; // Access directly
+    let animationFrameId: number | null = null;
+    let checkIntervalId: NodeJS.Timeout | null = null; // Use interval/timeout for checking
+    let attempts = 0;
+    const maxAttempts = 50; // Limit attempts to avoid infinite loop (50 * 100ms = 5 seconds)
+
+    const renderAbcNotation = () => {
+      console.log('[AbcRenderer] Attempting to render...');
       if (notationRef.current && abcNotation) {
-        // Clear previous notation
-        notationRef.current.innerHTML = '';
-        console.log('[AbcRenderer] Attempting to render ABC:', abcNotation.substring(0, 100) + '...'); // DEBUG LOG
+        const currentRef = notationRef.current;
+        currentRef.innerHTML = ''; // Clear previous notation
 
-        try {
-          // Combine params into a single options object
-          const options = {
-            ...parserParams,
-            ...engraverParams,
-            ...renderParams,
-          };
+        animationFrameId = requestAnimationFrame(() => {
+          console.log('[AbcRenderer] Rendering in animation frame...');
+          try {
+            const ABCJS = window.ABCJS; // Re-check just before using
+            if (!ABCJS) {
+              throw new Error('window.ABCJS not available at render time.');
+            }
+            const options = {
+              ...parserParams,
+              ...engraverParams,
+              ...renderParams,
+            };
+            const visualObj = ABCJS.renderAbc(currentRef, abcNotation, options);
 
-          // Use the global ABCJS object
-          const visualObj = ABCJS.renderAbc( // Assign result to check for warnings/errors
-            notationRef.current,
-            abcNotation,
-            options
-          );
-
-          // Check for warnings in the returned object (abcjs might put errors here)
-          if (visualObj && visualObj.length > 0 && visualObj[0].warnings) {
-              console.warn('[AbcRenderer] ABCJS warnings:', visualObj[0].warnings); // DEBUG LOG
-              // Treat warnings as errors for validation purposes
+            if (visualObj && visualObj.length > 0 && visualObj[0].warnings) {
+              console.warn('[AbcRenderer] ABCJS warnings:', visualObj[0].warnings);
               const error = new Error(`ABC Notation Warning/Error: ${visualObj[0].warnings.join(', ')}`);
-              if (onError) {
-                  onError(error);
-              }
-              // Optional: Display warning in the UI as well
-              // notationRef.current.innerHTML = `<p class=\"text-orange-500\">楽譜のレンダリング中に警告が発生しました: ${visualObj[0].warnings.join(\', \')}</p>`;
-          } else {
-              console.log('[AbcRenderer] ABC rendering successful (no warnings).'); // DEBUG LOG
-              // If rendering is successful, notify with null error
-              if (onError) {
-                  onError(null);
-              }
+              if (onError) onError(error);
+            } else {
+              console.log('[AbcRenderer] ABC rendering successful.');
+              if (onError) onError(null);
+            }
+          } catch (error) {
+            console.error('[AbcRenderer] ABC rendering failed:', error);
+            if (currentRef) {
+              currentRef.innerHTML = '<p class="text-red-500">楽譜のレンダリング中にエラーが発生しました。</p>';
+            }
+            if (onError) onError(error instanceof Error ? error : new Error(String(error)));
           }
-        } catch (error) {
-          console.error('[AbcRenderer] ABC rendering failed! Error caught:', error); // DEBUG LOG
-          notationRef.current.innerHTML = '<p class="text-red-500">楽譜のレンダリング中にエラーが発生しました。</p>';
-          // If rendering fails, notify with the error object
-          if (onError) {
-            onError(error instanceof Error ? error : new Error(String(error)));
-          }
-        }
+        });
       } else if (notationRef.current) {
+        // Clear notation if abcNotation is empty
         notationRef.current.innerHTML = '';
-        console.log('[AbcRenderer] Clearing notation (no abcInput).'); // DEBUG LOG
-        // Also notify that there's no error when input is cleared
-        if (onError) {
-            onError(null);
-        }
+        console.log('[AbcRenderer] Clearing notation (empty abcNotation).');
+        if (onError) onError(null);
       }
+    };
+
+    // Function to check if ABCJS is ready
+    const checkABCJS = () => {
+      console.log(`[AbcRenderer] Checking for window.ABCJS (Attempt ${attempts + 1})...`);
+      if (typeof window !== 'undefined' && window.ABCJS) {
+        console.log('[AbcRenderer] window.ABCJS found!');
+        if (checkIntervalId) clearInterval(checkIntervalId); // Stop checking
+        renderAbcNotation(); // Render now that it's ready
+      } else {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          console.error('[AbcRenderer] window.ABCJS not found after maximum attempts.');
+          if (checkIntervalId) clearInterval(checkIntervalId);
+          // Update UI and call onError on timeout
+          if (notationRef.current) {
+              notationRef.current.innerHTML = '<p class="text-red-500">楽譜の読み込みに失敗しました。ページをリロードしてみてください。</p>';
+          }
+          if (onError) onError(new Error('ABCJS library failed to load or initialize after timeout.'));
+        }
+        // Continue checking via the interval (if not timed out)
+      }
+    };
+
+    // Start checking for ABCJS periodically
+    if (typeof window !== 'undefined') { // Only run interval in browser
+        checkIntervalId = setInterval(checkABCJS, 100); // Check every 100ms
+        checkABCJS(); // Initial immediate check
     }
-  // Depend on isScriptLoaded and other relevant props, including onError
-  }, [isScriptLoaded, abcNotation, parserParams, engraverParams, renderParams, onError]); // Add onError to dependency array
+
+    // Cleanup function
+    return () => {
+      console.log('[AbcRenderer] Cleanup effect.');
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        console.log('[AbcRenderer] Cancelled animation frame:', animationFrameId);
+      }
+      if (checkIntervalId) {
+        clearInterval(checkIntervalId);
+        console.log('[AbcRenderer] Cleared check interval.');
+      }
+    };
+    // Depend only on props that should trigger a re-render attempt
+  }, [abcNotation, parserParams, engraverParams, renderParams, onError]);
 
   return (
     <>
       {/* Load abcjs script via next/script */}
       <Script
+        id="abcjs-script" // Add an ID for potential reference
         src="/scripts/abcjs-basic.js" // Path relative to the public directory
-        strategy="lazyOnload"        // Load after the page is interactive
+        strategy="afterInteractive"  // Keep this strategy
         onLoad={() => {
-          console.log('abcjs script loaded.');
-          setIsScriptLoaded(true);
+          // We no longer use isScriptLoaded state, but logging is still useful
+          console.log('abcjs script finished loading.');
+          // The check interval in useEffect will handle finding window.ABCJS
         }}
         onError={(e) => {
           console.error('Error loading abcjs script:', e);
+          // Consider calling onError here as well if script fails to load
+          if (onError) onError(new Error(`Failed to load abcjs script: ${e.message}`));
         }}
       />
       <div ref={notationRef} />
