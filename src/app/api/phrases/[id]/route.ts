@@ -9,7 +9,7 @@ export async function GET(
     request: NextRequest,
     context: { params: { id: string } }
 ) {
-    await request.text();
+    // await request.text();
     const session = await auth();
     const phraseId = context.params.id;
 
@@ -58,7 +58,7 @@ export async function DELETE(
   request: NextRequest,
   context: { params: { id: string } }
 ) {
-  await request.text();
+//   await request.text();
   const session = await auth();
 
   if (!session || !session.user?.id) {
