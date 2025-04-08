@@ -106,6 +106,8 @@ const PhraseDetailPage: React.FC = () => {
     const [commentError, setCommentError] = useState<string | null>(null);
     const [isStarrting, setIsStarrting] = useState<boolean>(false);
     const [starError, setStarError] = useState<string | null>(null);
+    const [isForking, setIsForking] = useState<boolean>(false);
+    const [forkError, setForkError] = useState<string | null>(null);
 
     // --- Fetch phrase data --- (Runs once on mount)
     useEffect(() => {
@@ -291,6 +293,35 @@ const PhraseDetailPage: React.FC = () => {
         }
     };
 
+    // --- Fork Handler ---
+    const handleFork = async () => {
+        if (!session || !phraseId || isForking) return;
+
+        setIsForking(true);
+        setForkError(null);
+
+        try {
+            const response = await fetch(`/api/phrases/${phraseId}/fork`, { method: 'POST' });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const forkedPhrase = await response.json();
+            alert('フレーズをライブラリにフォークしました！');
+            // Redirect to the newly forked phrase's detail page or dashboard
+            router.push(`/phrases/${forkedPhrase.id}`); // Go to the new phrase
+            // Or router.push('/dashboard');
+
+        } catch (error) {
+            console.error('Error forking phrase:', error);
+            setForkError(`フォークに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+            setIsForking(false);
+        }
+    };
+
     // Determine if the current user is the owner
     const isOwner = !!session && !!phraseData && phraseData.user?.id === loggedInUserId;
 
@@ -335,6 +366,23 @@ const PhraseDetailPage: React.FC = () => {
                         </button>
                     )}
                     {/* ------------------- */}
+                    {/* --- Fork Button (Show if logged in and not owner) --- */}
+                    {session && !isOwner && (
+                        <button
+                            onClick={handleFork}
+                            disabled={isForking}
+                            className="flex items-center px-3 py-1.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            aria-label="このフレーズをフォークする"
+                        >
+                            {/* Basic Fork Icon Placeholder */}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /> {/* Simple folder-like icon */} 
+                              {/* Better fork icon: <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l7.5-5M15 15l6-6m-6 6v7" /> */}
+                            </svg>
+                            <span>{isForking ? 'フォーク中...' : 'フォーク'}</span>
+                        </button>
+                    )}
+                    {/* -------------------------------------------------------- */}
                     {isOwner && (
                         <div className="flex gap-2">
                             <Link href={`/phrases/${phraseId}/edit`}>
@@ -368,6 +416,13 @@ const PhraseDetailPage: React.FC = () => {
              {starError && (
                 <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
                     {starError}
+                </div>
+            )}
+
+            {/* Display Fork Error */}
+             {forkError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
+                    {forkError}
                 </div>
             )}
 

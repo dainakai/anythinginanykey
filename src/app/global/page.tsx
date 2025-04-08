@@ -49,6 +49,7 @@ function GlobalPhrasesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starringStatus, setStarringStatus] = useState<Record<string, { loading: boolean; error: string | null }>>({});
+  const [forkingStatus, setForkingStatus] = useState<Record<string, { loading: boolean; error: string | null }>>({});
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const currentTag = searchParams.get('tag') || '';
@@ -187,6 +188,39 @@ function GlobalPhrasesContent() {
     }
 };
 
+  // --- Fork Handler for Global List ---
+  const handleFork = async (phraseId: string) => {
+    if (!session) {
+        alert('フレーズをフォークするにはログインが必要です。');
+        router.push('/login');
+        return;
+    }
+
+    setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: true, error: null } }));
+
+    try {
+        const response = await fetch(`/api/phrases/${phraseId}/fork`, { method: 'POST' });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            // Handle specific errors, e.g., user trying to fork their own public phrase?
+            // Or maybe the phrase became private?
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const forkedPhrase = await response.json();
+        alert('フレーズをライブラリにフォークしました！');
+        // Optionally navigate or just provide feedback
+        // router.push(`/phrases/${forkedPhrase.id}`);
+        setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: null } })); // Clear loading on success
+
+    } catch (error) {
+        console.error('Error forking phrase from global list:', error);
+        setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: `フォーク失敗: ${error instanceof Error ? error.message : String(error)}` } }));
+    }
+    // Do not clear loading in finally, only on success or explicit error handling
+};
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
@@ -240,6 +274,8 @@ function GlobalPhrasesContent() {
                 const engraverParams = { responsive: 'resize', staffwidth: 500 };
                 const renderParams = { scale: 1.3 };
                 const starStatus = starringStatus[phrase.id] || { loading: false, error: null };
+                const forkStatus = forkingStatus[phrase.id] || { loading: false, error: null };
+                const isOwnPhrase = session?.user?.id === phrase.user?.id; // Check if it's user's own phrase
 
                 return (
                   <div key={phrase.id} className="border rounded-lg p-4 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
@@ -299,12 +335,33 @@ function GlobalPhrasesContent() {
                             {starStatus.loading && <span className="ml-1 text-xs">(...)</span>}
                         </button>
 
+                        {/* --- Fork Button (Show if logged in and not own phrase) --- */}
+                        {session && !isOwnPhrase && (
+                            <button
+                                onClick={() => handleFork(phrase.id)}
+                                disabled={forkStatus.loading}
+                                className="flex items-center px-2 py-1 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                aria-label="このフレーズをフォークする"
+                                title="自分のライブラリにコピーする"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 mr-1 ${forkStatus.loading ? 'animate-spin text-gray-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                <span>{forkStatus.loading ? '...' : 'フォーク'}</span>
+                            </button>
+                        )}
+                        {/* -------------------------------------------------------- */}
+
                         <Link href={`/phrases/${phrase.id}`} className="text-blue-600 hover:underline text-sm">
                           詳細を見る
                         </Link>
                     </div>
-                     {/* Display Star Error per card */}
-                      {starStatus.error && (
+                    {/* Display Fork Error per card */}
+                     {forkStatus.error && (
+                       <p className="text-xs text-red-500 mt-1">{forkStatus.error}</p>
+                   )}
+                    {/* Display Star Error per card */}
+                    {starStatus.error && (
                         <p className="text-xs text-red-500 mt-1">{starStatus.error}</p>
                     )}
                   </div>
