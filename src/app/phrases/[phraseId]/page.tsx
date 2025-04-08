@@ -1,3 +1,4 @@
+"use client";
 // import { auth } from '@/auth';
 // import prisma from '@/lib/prisma';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
