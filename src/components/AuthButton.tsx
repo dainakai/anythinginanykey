@@ -13,19 +13,5 @@ export default function AuthButton() {
   if (session) {
     return (
       <button
-        onClick={() => signOut()}
-        className={`${commonButtonStyles} ${signOutStyles}`}
-      >
-        Sign out
-      </button>
-    );
-  }
-  return (
-    <button
-      onClick={() => signIn('google')}
-      className={`${commonButtonStyles} ${signInStyles}`}
-    >
-      Sign in
-    </button>
-  );
-}
+        onClick={() => signOut({ callbackUrl: '/' })}
+        className={`${commonButtonStyles} ${signOutStyles}`
