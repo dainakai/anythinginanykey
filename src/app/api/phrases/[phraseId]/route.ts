@@ -152,6 +152,8 @@ export async function PUT(
     }
 
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    console.error('Invalid PUT request body:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
@@ -195,7 +197,6 @@ export async function PUT(
 
     return NextResponse.json(updatedPhrase);
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error updating phrase:', error);
      if (error instanceof SyntaxError) {
         return NextResponse.json({ error: 'Invalid JSON format in request body' }, { status: 400 });

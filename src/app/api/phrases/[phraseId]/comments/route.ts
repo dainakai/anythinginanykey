@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -76,8 +77,14 @@ export async function POST(
     return NextResponse.json(newComment, { status: 201 });
 
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error adding comment:', error);
-    // Handle potential errors, e.g., foreign key constraint if phraseId is invalid
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // Handle potential errors like foreign key constraints, etc.
+      if (error.code === 'P2003') { // Foreign key constraint failed (e.g., phrase doesn't exist)
+          return NextResponse.json({ error: 'Phrase not found or invalid reference.' }, { status: 404 });
+      }
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

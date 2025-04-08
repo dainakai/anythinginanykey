@@ -31,6 +31,8 @@ export async function PATCH(request: NextRequest) {
     }
 
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    console.error('Invalid profile request body:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
@@ -51,7 +53,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(updatedUser);
 
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error updating user profile:', error);
      if (error instanceof Prisma.PrismaClientValidationError) {
         return NextResponse.json({ error: 'Database validation error.', details: error.message }, { status: 400 });

@@ -35,6 +35,8 @@ export async function PATCH(
     }
     isPublic = body.isPublic;
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    console.error('Invalid request body for publish:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
@@ -72,7 +74,6 @@ export async function PATCH(
 
     return NextResponse.json(updatedPhrase);
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error updating publish status:', error);
     // Rename error to _error if unused
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
