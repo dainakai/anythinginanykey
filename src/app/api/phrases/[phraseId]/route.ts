@@ -1,16 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
-interface Params {
-  params: {
-    phraseId: string;
-  };
-}
-
 // Get phrase details
-export async function GET(request: Request, { params }: Params) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { phraseId: string } }
+) {
   const session = await auth();
   const userId = session?.user?.id; // Get user ID if logged in
   const { phraseId } = params;
