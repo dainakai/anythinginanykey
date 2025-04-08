@@ -104,6 +104,8 @@ const PhraseDetailPage: React.FC = () => {
     const [newCommentContent, setNewCommentContent] = useState<string>('');
     const [isSubmittingComment, setIsSubmittingComment] = useState<boolean>(false);
     const [commentError, setCommentError] = useState<string | null>(null);
+    const [isStarrting, setIsStarrting] = useState<boolean>(false);
+    const [starError, setStarError] = useState<string | null>(null);
 
     // --- Fetch phrase data --- (Runs once on mount)
     useEffect(() => {
@@ -233,6 +235,62 @@ const PhraseDetailPage: React.FC = () => {
         }
     };
 
+    // --- Star Toggle Handler ---
+    const handleStarToggle = async () => {
+        if (!session || !phraseData || isStarrting) return; // Need session and phrase data
+
+        setIsStarrting(true);
+        setStarError(null);
+
+        const currentlyStarred = phraseData.userHasStarred;
+        const method = currentlyStarred ? 'DELETE' : 'POST';
+
+        // Optimistic UI update
+        setPhraseData(prevData => {
+            if (!prevData) return null;
+            return {
+                ...prevData,
+                userHasStarred: !currentlyStarred,
+                starCount: currentlyStarred ? prevData.starCount - 1 : prevData.starCount + 1,
+            };
+        });
+
+        try {
+            const response = await fetch(`/api/phrases/${phraseId}/star`, { method });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            // Update with the actual star count from the server for consistency
+            setPhraseData(prevData => {
+                if (!prevData) return null;
+                return {
+                    ...prevData,
+                    starCount: result.starCount,
+                };
+            });
+
+        } catch (error) {
+            console.error('Error toggling star:', error);
+            setStarError(`スター状態の更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+            // Revert optimistic update on error
+            setPhraseData(prevData => {
+                if (!prevData) return null;
+                return {
+                    ...prevData,
+                    userHasStarred: currentlyStarred, // Revert star status
+                    starCount: currentlyStarred ? prevData.starCount + 1 : prevData.starCount - 1, // Revert count (approximate)
+                    // Ideally, refetch phrase data here for guaranteed consistency
+                };
+            });
+        } finally {
+            setIsStarrting(false);
+        }
+    };
+
     // Determine if the current user is the owner
     const isOwner = !!session && !!phraseData && phraseData.user?.id === loggedInUserId;
 
@@ -257,32 +315,59 @@ const PhraseDetailPage: React.FC = () => {
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">フレーズ詳細</h1>
-                {/* Conditionally render action buttons only for the owner */}
-                {isOwner && (
-                    <div className="flex gap-2">
-                        <Link href={`/phrases/${phraseId}/edit`}>
-                            <button
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                                disabled={isLoading || !!loadError}
-                            >
-                                編集
-                            </button>
-                        </Link>
+                <div className="flex items-center gap-4">
+                     {/* --- Star Button --- */}
+                     {session && phraseData && (
                         <button
-                            onClick={handleDelete}
-                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-                            disabled={isDeleting || isLoading || !!loadError}
+                            onClick={handleStarToggle}
+                            disabled={isStarrting}
+                            className={`flex items-center px-3 py-1.5 border rounded transition-colors disabled:opacity-50 ${ phraseData.userHasStarred
+                                    ? 'border-yellow-500 bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                    : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                                }`}
+                            aria-label={phraseData.userHasStarred ? 'スターを外す' : 'スターを付ける'}
                         >
-                            {isDeleting ? '削除中...' : '削除'}
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 mr-1 ${phraseData.userHasStarred ? 'text-yellow-500' : 'text-gray-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            <span>{phraseData.starCount ?? 0}</span>
+                            {isStarrting && <span className="ml-2 text-xs">(更新中...)</span>}
                         </button>
-                    </div>
-                )}
+                    )}
+                    {/* ------------------- */}
+                    {isOwner && (
+                        <div className="flex gap-2">
+                            <Link href={`/phrases/${phraseId}/edit`}>
+                                <button
+                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                                    disabled={isLoading || !!loadError}
+                                >
+                                    編集
+                                </button>
+                            </Link>
+                            <button
+                                onClick={handleDelete}
+                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                                disabled={isDeleting || isLoading || !!loadError}
+                            >
+                                {isDeleting ? '削除中...' : '削除'}
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Display Deletion Error */}
             {deleteError && (
                 <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
                     {deleteError}
+                </div>
+            )}
+
+            {/* Display Star Error */}
+             {starError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
+                    {starError}
                 </div>
             )}
 
