@@ -1,8 +1,26 @@
+
+# Git files
 .git
-.next
+.gitignore
+
+# Node modules
 node_modules
-npm-debug.log
-Dockerfile*
-docker-compose*
-.env
-README.md
+
+# Next.js build output
+.next
+
+# Environment variables
+.env*
+!.env.example
+
+# Docker files (except this one if needed, but usually ignored)
+Dockerfile
+Dockerfile.*
+
+# Prisma local database
+prisma/dev.db
+prisma/dev.db-journal
+
+# OS files
+.DS_Store
+*.pem
