@@ -56,14 +56,15 @@ const TutorialPage = () => {
             楽譜をシンプルなテキストで表現するための世界共通の方法です。音符、リズム、調号、コードなどを文字や記号で記述します。
           </p>
           <p className="mb-3 font-medium">基本的な「ドレミファソラシド」の例:</p>
-          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded mb-4 text-sm overflow-x-auto shadow-inner">
+          {/* Use template literal for proper newline rendering in pre tag */}
+          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded mb-4 text-sm overflow-x-auto shadow-inner whitespace-pre-wrap"> {/* Add whitespace-pre-wrap */}
             <code className="dark:text-gray-300">
-              X:1{/* 曲の番号 (必須) */}\n
-              T:ドレミ{/* タイトル (オプション) */}\n
-              M:4/4{/* 拍子記号 (4/4拍子) */}\n
-              L:1/4{/* 基本の音符の長さ (四分音符) */}\n
-              K:C{/* 調号 (ハ長調) */}\n
-              C D E F | G A B c |] {/* C(ド)から高いC(ド)までの音符。`|`は小節線、`|]`は終了線。 */}
+              {`X:1
+T:ドレミ
+M:4/4
+L:1/4
+K:C
+C D E F | G A B c |]`}
             </code>
           </pre>
           <p className="mb-4 text-gray-700 dark:text-gray-300">
@@ -71,8 +72,8 @@ const TutorialPage = () => {
             より詳しい書き方や便利な機能については、専用のヘルプガイドで確認できます。
           </p>
           <Link href="/help/abc-notation" passHref>
-            {/* Updated Button Style */}
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300 flex items-center">
+            {/* Adjusted Button Colors (slightly less vivid hover) */}
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300 flex items-center">
               <BookOpen className="w-4 h-4 mr-2" />
               ABC Notation ガイドを見る
             </Button>
@@ -90,7 +91,7 @@ const TutorialPage = () => {
             準備はできましたか？<br />「マイフレーズ」ページで最初のフレーズを作成してみましょう！
           </p>
           <Link href="/dashboard" passHref>
-            {/* Updated Button Style */}
+            {/* Adjusted Button Colors (slightly less vivid hover) */}
             <Button
               variant="secondary"
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center mx-auto"
