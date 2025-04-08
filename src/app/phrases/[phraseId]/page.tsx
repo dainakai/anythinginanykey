@@ -101,6 +101,9 @@ const PhraseDetailPage: React.FC = () => {
     const [renderError, setRenderError] = useState<Error | null>(null); // State for rendering error
     const [isDeleting, setIsDeleting] = useState<boolean>(false); // State for deletion status
     const [deleteError, setDeleteError] = useState<string>(''); // State for deletion error
+    const [newCommentContent, setNewCommentContent] = useState<string>('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState<boolean>(false);
+    const [commentError, setCommentError] = useState<string | null>(null);
 
     // --- Fetch phrase data --- (Runs once on mount)
     useEffect(() => {
@@ -182,6 +185,51 @@ const PhraseDetailPage: React.FC = () => {
             setDeleteError(`削除中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    // --- Comment Submit Handler ---
+    const handleCommentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!newCommentContent.trim() || isSubmittingComment || !phraseId) {
+            return;
+        }
+
+        setIsSubmittingComment(true);
+        setCommentError(null);
+
+        try {
+            const response = await fetch(`/api/phrases/${phraseId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: newCommentContent.trim() }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const newComment: CommentData = await response.json();
+
+            // Add the new comment to the local state
+            setPhraseData(prevData => {
+                if (!prevData) return null;
+                return {
+                    ...prevData,
+                    comments: [...prevData.comments, newComment],
+                };
+            });
+
+            setNewCommentContent(''); // Clear the input field
+
+        } catch (error) {
+            console.error('Error submitting comment:', error);
+            setCommentError(`コメントの送信に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+            setIsSubmittingComment(false);
         }
     };
 
@@ -329,13 +377,46 @@ const PhraseDetailPage: React.FC = () => {
 
             {/* Section for Comments */}
             <div className="mt-8 p-4 border rounded shadow-md bg-white">
-                <h2 className="text-xl font-semibold mb-4">コメント ({phraseData.comments.length})</h2>
-                {/* TODO: Add Comment Form */} 
+                <h2 className="text-xl font-semibold mb-4">コメント ({phraseData?.comments?.length ?? 0})</h2>
+
+                {/* --- Comment Form (Only show if logged in) --- */}
+                {session && (
+                    <form onSubmit={handleCommentSubmit} className="mb-6">
+                        <label htmlFor="comment-input" className="block text-sm font-medium text-gray-700 mb-1">
+                            コメントを追加
+                        </label>
+                        <textarea
+                            id="comment-input"
+                            rows={3}
+                            value={newCommentContent}
+                            onChange={(e) => setNewCommentContent(e.target.value)}
+                            placeholder={isOwner ? "フレーズに関するメモや練習の記録などを残せます。" : "このフレーズについてコメントを残しましょう！"}
+                            required
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                            disabled={isSubmittingComment}
+                        />
+                        {commentError && <p className="text-red-500 text-sm mt-1">{commentError}</p>}
+                        <div className="mt-2 flex justify-end">
+                            <button
+                                type="submit"
+                                disabled={isSubmittingComment || !newCommentContent.trim()}
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                            >
+                                {isSubmittingComment ? '送信中...' : 'コメントを投稿'}
+                            </button>
+                        </div>
+                    </form>
+                )}
+                {!session && (
+                     <p className="text-gray-500 text-sm mb-6">コメントするには<Link href="/login" className="text-blue-600 hover:underline">ログイン</Link>が必要です。</p>
+                )}
+                {/* -------------------------------------------- */}
+
                 <div className="space-y-4 mt-4">
-                    {phraseData.comments.length === 0 && (
+                    {phraseData?.comments?.length === 0 && (
                         <p className="text-gray-500">まだコメントはありません。</p>
                     )}
-                    {phraseData.comments.map(comment => (
+                    {phraseData?.comments?.map(comment => (
                         <div key={comment.id} className="p-3 border-b last:border-b-0">
                             <div className="flex items-center space-x-2 mb-1">
                                 {comment.user.image ? (
