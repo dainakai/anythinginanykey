@@ -55,6 +55,7 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 }); // Successfully deleted, no content to return
 
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error deleting comment:', error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         // Handle case where the record to delete doesn't exist

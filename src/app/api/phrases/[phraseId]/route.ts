@@ -108,6 +108,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
   }
 
+  // eslint-disable-next-line prefer-const
   let dataToUpdate: Prisma.PhraseUpdateInput = {}; // Use PhraseUpdateInput for better typing
   let originalKey: string = 'C'; // Default key
   let tagNames: string[] = [];
@@ -194,6 +195,7 @@ export async function PUT(
 
     return NextResponse.json(updatedPhrase);
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error updating phrase:', error);
      if (error instanceof SyntaxError) {
         return NextResponse.json({ error: 'Invalid JSON format in request body' }, { status: 400 });
