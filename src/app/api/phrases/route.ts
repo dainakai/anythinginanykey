@@ -5,8 +5,6 @@ import { parseAbcNotation } from '@/lib/abcParser';
 
 const prisma = new PrismaClient();
 
-export const runtime = 'edge';
-
 export async function POST(request: Request) {
   const session = await auth();
 

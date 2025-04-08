@@ -3,8 +3,6 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
-export const runtime = 'edge';
-
 const DEFAULT_PAGE_LIMIT = 9;
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 

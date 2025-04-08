@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
-export const runtime = 'edge';
-
 // Define context type with Promise for params
 interface RouteContext {
   params: Promise<{ phraseId: string }>; // Params is now a Promise

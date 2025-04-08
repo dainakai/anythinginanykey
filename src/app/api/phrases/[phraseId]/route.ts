@@ -4,8 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
 
-export const runtime = 'edge';
-
 // Define context type with Promise for params
 interface RouteContext {
   params: Promise<{ phraseId: string }>; // Params is now a Promise
