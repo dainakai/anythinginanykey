@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client';
 import PaginationControls from '@/components/PaginationControls';
-import { useSession } from 'next-auth/react';
 // Assuming shadcn/ui is installed - import Switch
 // import { Switch } from "@/components/ui/switch";
 // import { Label } from "@/components/ui/label";
@@ -40,7 +39,6 @@ const UNTAGGED_FILTER_VALUE = '__untagged__';
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
 
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
