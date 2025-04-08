@@ -81,7 +81,10 @@ export async function GET(
 }
 
 // Update phrase details
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { phraseId: string } }
+) {
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -168,7 +171,10 @@ export async function PUT(request: Request, { params }: Params) {
 }
 
 // Delete a phrase
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { phraseId: string } }
+) {
   const session = await auth();
   const userId = session?.user?.id;
 
