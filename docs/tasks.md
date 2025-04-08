@@ -1,4 +1,4 @@
-# Anything in Anykeys 実装タスク一覧
+# Anything in AnyKey 実装タスク一覧
 
 ## 1. 初期セットアップとインフラ構築
 

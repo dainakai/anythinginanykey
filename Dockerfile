@@ -12,7 +12,7 @@ COPY package*.json ./
 ENV NODE_ENV=development
 
 # Install dependencies including devDependencies
-RUN npm install --legacy-peer-deps
+RUN npm cache clean --force && npm install --legacy-peer-deps
 
 # Copy prisma schema
 COPY prisma ./prisma/

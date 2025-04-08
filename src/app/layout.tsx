@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Anything in Anykeys",
+  title: "Anything in AnyKey",
   description: "A platform for musicians to manage and practice melodic phrases.",
 };
 

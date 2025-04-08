@@ -1,6 +1,6 @@
-# Anything in Anykeys
+# Anything in AnyKey
 
-ジャズなどのインプロヴィゼーションを行うミュージシャン向けのフレーズ管理・共有サービス「Anything in Anykeys」のリポジトリです。
+ジャズなどのインプロヴィゼーションを行うミュージシャン向けのフレーズ管理・共有サービス「Anything in AnyKey」のリポジトリです。
 
 ## 特徴
 
