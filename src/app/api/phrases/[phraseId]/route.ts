@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
 
-export const runtime = 'edge'; // Added Edge runtime config
+// export const runtime = 'edge'; // Added Edge runtime config
 
 // Define context type with Promise for params
 interface RouteContext {

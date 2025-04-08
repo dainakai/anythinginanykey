@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prisma';
+// export const runtime = 'edge';
 
-export const runtime = 'edge';
-
-const DEFAULT_PAGE_LIMIT = 9;
+const DEFAULT_PAGE_LIMIT = 10; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
 export async function GET(request: Request) {

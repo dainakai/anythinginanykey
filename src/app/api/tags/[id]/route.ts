@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 // DELETE /api/tags/[id] - Delete a user-defined tag
 export async function DELETE(

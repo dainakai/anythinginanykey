@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prisma';
+// export const runtime = 'edge';
 
-export const runtime = 'edge';
-
-const DEFAULT_PAGE_LIMIT = 9;
+const DEFAULT_PAGE_LIMIT = 10; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
 // Fetch globally shared phrases

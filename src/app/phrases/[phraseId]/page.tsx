@@ -9,7 +9,7 @@ import Image from 'next/image'; // Import next/image
 // Import necessary icons
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-export const runtime = 'edge'; // Added Edge runtime config
+// export const runtime = 'edge'; // Removed Edge runtime config
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.

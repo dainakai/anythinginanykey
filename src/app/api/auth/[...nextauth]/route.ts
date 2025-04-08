@@ -5,7 +5,7 @@ import { handlers } from "@/auth";
 // import { PrismaAdapter } from "@auth/prisma-adapter";
 // import prisma from "@/lib/prisma"; // Import the centralized Prisma client
 
-export const runtime = 'edge';
+// export const runtime = 'edge'; // Removed Edge runtime config
 
 export const { GET, POST } = handlers;
 

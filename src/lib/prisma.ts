@@ -1,17 +1,17 @@
 // src/lib/prisma.ts
-import { PrismaClient } from '@prisma/client/edge';
-import { withAccelerate } from '@prisma/extension-accelerate';
+import { PrismaClient } from '@prisma/client';
+// import { withAccelerate } from '@prisma/extension-accelerate';
 
 declare global {
   // allow global `var` declarations
   // eslint-disable-next-line no-var
-  var prisma: ReturnType<typeof prismaClientSingleton> | undefined;
+  var prisma: PrismaClient | undefined;
 }
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
     // log: ['query'], // Uncomment to log Prisma queries
-  }).$extends(withAccelerate());
+  });
 };
 
 export const prisma =

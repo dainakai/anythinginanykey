@@ -6,7 +6,6 @@ services:
       - "5555:5555"
     volumes:
       - .:/app
-      - node_modules_data:/app/node_modules
     environment:
       NODE_ENV: development
     depends_on:
@@ -26,4 +25,3 @@ services:
 
 volumes:
   postgres_data:
-  node_modules_data:

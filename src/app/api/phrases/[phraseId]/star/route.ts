@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 // Define context type with Promise for params
 interface RouteContext {
