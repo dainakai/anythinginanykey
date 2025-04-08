@@ -60,8 +60,9 @@ const Header = () => {
 
   // Help menu items
   const helpLinks = [
-    { href: '/tutorial', title: '初回チュートリアル', description: 'Anything in Anykeys の基本的な使い方を学びます。' },
-    { href: '/help/abc-notation', title: 'ABC Notation ガイド', description: 'ABC Notation の書き方とエディタの使い方を解説します。' },
+    { href: '/tutorial', title: '初回チュートリアル', description: 'Anything in AnyKey の基本的な使い方を学びます。' },
+    { href: '/help/abc-notation', title: 'ABC Notation ガイド', description: 'ABC Notation の書き方を詳しく解説します。' },
+    { href: '/help/faq', title: 'よくある質問', description: 'サービスに関するよくある質問と回答です。' },
     // Add other help items here
   ];
 
@@ -81,7 +82,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo/Brand Name */}
         <Link href="/" className="text-xl font-bold hover:text-gray-300">
-          Anything in Anykeys
+          Anything in AnyKey
         </Link>
 
         {/* Desktop Navigation */}

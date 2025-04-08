@@ -1,6 +1,6 @@
 # ABC Notation 入力ガイド
 
-「Anything in Anykeys」では、音楽フレーズを [ABC Notation](http://abcnotation.com/) というテキストベースの形式で入力します。このガイドでは、基本的な入力方法について説明します。
+「Anything in AnyKey」では、音楽フレーズを [ABC Notation](http://abcnotation.com/) というテキストベースの形式で入力します。このガイドでは、基本的な入力方法について説明します。
 
 ## 1. 基本構造
 
