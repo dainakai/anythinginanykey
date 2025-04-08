@@ -7,6 +7,7 @@ import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client'; // Assuming Tag type is available
 import PaginationControls from '@/components/PaginationControls';
 import { useSession } from 'next-auth/react'; // Import useSession
+import Image from 'next/image'; // Import next/image
 
 // Define interface based on /api/phrases/global response
 interface GlobalPhrase {
@@ -140,7 +141,7 @@ function GlobalPhrasesContent() {
 
     // Let's try POST first, assuming not starred initially for this list view
     let method = 'POST';
-    let optimisticStarCount = currentStarCount + 1;
+    let _optimisticStarCount = currentStarCount + 1;
 
     // We don't have `userHasStarred` here, so we guess based on the action
     // This isn't ideal for optimistic UI, but we'll update with server response.
@@ -155,7 +156,7 @@ function GlobalPhrasesContent() {
             // For now, just throw the error.
              if (response.status === 409) { // Example: 409 Conflict if already starred
                  method = 'DELETE';
-                 optimisticStarCount = currentStarCount -1; // Adjust optimistic count
+                 _optimisticStarCount = currentStarCount -1;
                  const delResponse = await fetch(`/api/phrases/${phraseId}/star`, { method });
                  if (!delResponse.ok) {
                      const delErrorData = await delResponse.json();
@@ -208,10 +209,10 @@ function GlobalPhrasesContent() {
             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
-        const forkedPhrase = await response.json();
+        const _forkedPhrase = await response.json();
         alert('フレーズをライブラリにフォークしました！');
         // Optionally navigate or just provide feedback
-        // router.push(`/phrases/${forkedPhrase.id}`);
+        // router.push(`/phrases/${_forkedPhrase.id}`);
         setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: null } })); // Clear loading on success
 
     } catch (error) {
@@ -298,7 +299,7 @@ function GlobalPhrasesContent() {
                         <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
                             {/* Basic image placeholder or use Next/Image if configured */}
                             {phrase.user.image ? (
-                                <img src={phrase.user.image} alt={phrase.user.name || 'Author'} className="h-5 w-5 rounded-full" />
+                                <Image src={phrase.user.image} alt={phrase.user.name || 'Author'} width={20} height={20} className="rounded-full" />
                             ) : (
                                 <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span> // Placeholder
                             )}

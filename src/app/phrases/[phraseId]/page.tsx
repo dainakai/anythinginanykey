@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
 import { useSession } from 'next-auth/react'; // Import useSession to get user data
+import Image from 'next/image'; // Import next/image
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.
@@ -603,12 +604,12 @@ const PhraseDetailPage: React.FC = () => {
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center space-x-2 mb-1">
                                        {comment.user.image ? (
-                                            <img src={comment.user.image} alt={comment.user.name || 'User'} className="h-6 w-6 rounded-full" />
-                                        ) : (
-                                            <span className="h-6 w-6 rounded-full bg-gray-300 inline-block"></span>
-                                        )}
-                                        <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
-                                        <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
+                                          <Image src={comment.user.image} alt={comment.user.name || 'User'} width={20} height={20} className="rounded-full" />
+                                       ) : (
+                                          <span className="h-6 w-6 rounded-full bg-gray-300 inline-block"></span>
+                                       )}
+                                       <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
+                                       <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
                                     </div>
                                     {/* --- Delete Comment Button --- */}
                                     {isCommentOwner && (

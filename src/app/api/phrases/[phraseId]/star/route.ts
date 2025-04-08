@@ -71,10 +71,11 @@ export async function POST(
 
     return NextResponse.json({ starCount: result.starCount }, { status: 200 }); // Return new star count
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error starring phrase:', error);
-    if (error.message === 'PhraseNotFound') {
-        return NextResponse.json({ error: 'Phrase not found' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        // Handle case where the Star record to delete doesn't exist
+        return NextResponse.json({ error: 'Not starred or phrase not found' }, { status: 404 });
     }
     // Handle other potential errors like unique constraint violations if upsert wasn't used
     // Or the custom 'CannotStarPrivatePhrase' error
@@ -138,11 +139,11 @@ export async function DELETE(
 
     return NextResponse.json({ starCount: result.starCount }, { status: 200 }); // Return new star count
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error unstarring phrase:', error);
-    // Handle cases where the phrase might not exist
-    if (error.message === 'PhraseNotFoundAfterUpdate' || (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
-        return NextResponse.json({ error: 'Phrase not found' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        // Handle case where the Star record to delete doesn't exist
+        return NextResponse.json({ error: 'Not starred or phrase not found' }, { status: 404 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

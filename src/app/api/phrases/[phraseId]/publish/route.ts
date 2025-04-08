@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -71,8 +72,12 @@ export async function PATCH(
 
     return NextResponse.json(updatedPhrase);
   } catch (error) {
-    console.error('Error updating phrase public status:', error);
-    // Consider more specific error handling based on potential Prisma errors
+    console.error('Error updating publish status:', error);
+    // Rename error to _error if unused
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        // Handle specific Prisma errors if needed
+    }
+    // console.error('Error updating publish status:', _error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

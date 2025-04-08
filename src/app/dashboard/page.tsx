@@ -195,7 +195,7 @@ function DashboardContent() {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const updatedUser = await response.json();
+      const _updatedUser = await response.json();
       alert('プロフィール名を更新しました！');
       // TODO: Update session data locally if possible/needed, or trigger session refetch
       // For now, rely on next page load or manual refresh for session update

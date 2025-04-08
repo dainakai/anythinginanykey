@@ -135,10 +135,11 @@ export async function PUT(
 
     // --- Validate tags (optional) ---
     if (Array.isArray(body.tags)) {
-        if (!body.tags.every((tag: any) => typeof tag === 'string')) {
+        // Use unknown and typeof for better type safety
+        if (!body.tags.every((tag: unknown) => typeof tag === 'string')) {
              return NextResponse.json({ error: 'tags must be an array of strings.' }, { status: 400 });
         }
-        tagNames = body.tags; // Store tag names for processing later
+        tagNames = body.tags as string[]; // Cast after validation
     } else if (body.tags !== undefined) {
         return NextResponse.json({ error: 'tags must be an array of strings.' }, { status: 400 });
     }

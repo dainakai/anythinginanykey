@@ -7,6 +7,7 @@ import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client';
 import PaginationControls from '@/components/PaginationControls';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 
 // Interface for starred phrases (similar to GlobalPhrase, but userHasStarred is implicitly true)
 interface StarredPhrase {
@@ -129,7 +130,7 @@ function StarredPhrasesContent() {
   };
 
   // --- Star Toggle Handler (Same logic as global, but assumes initially starred) ---
-   const handleStarToggle = async (phraseId: string, currentStarCount: number) => {
+   const handleStarToggle = async (phraseId: string, _currentStarCount: number) => {
     if (!session) {
       alert('操作にはログインが必要です。');
       router.push('/login');
@@ -139,7 +140,7 @@ function StarredPhrasesContent() {
     setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: true, error: null } }));
 
     // Assume currently starred, so try DELETE first
-    let method = 'DELETE';
+    const method = 'DELETE';
 
     try {
         const response = await fetch(`/api/phrases/${phraseId}/star`, { method });
@@ -181,7 +182,7 @@ function StarredPhrasesContent() {
             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
-        const forkedPhrase = await response.json();
+        const _forkedPhrase = await response.json();
         alert('フレーズをライブラリにフォークしました！');
         setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: null } }));
 
@@ -267,7 +268,7 @@ function StarredPhrasesContent() {
                      {phrase.user && (
                         <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
                             {phrase.user.image ? (
-                                <img src={phrase.user.image} alt={phrase.user.name || 'Author'} className="h-5 w-5 rounded-full" />
+                                <Image src={phrase.user.image} alt={phrase.user.name || 'Author'} width={20} height={20} className="rounded-full" />
                             ) : (
                                 <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span>
                             )}
