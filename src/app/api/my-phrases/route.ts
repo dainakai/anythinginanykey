@@ -3,7 +3,7 @@ import { auth } from '@/auth'; // Assuming auth setup exists
 import { prisma } from '@/lib/prisma'; // Import prisma directly
 import { Prisma } from '@prisma/client';
 
-export const runtime = 'edge'; // Added Edge runtime config
+// export const runtime = 'edge'; // Removed Edge runtime config
 
 const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
