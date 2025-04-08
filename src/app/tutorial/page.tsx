@@ -11,7 +11,7 @@ const TutorialPage = () => {
     <div className="container mx-auto px-4 py-8 max-w-3xl"> {/* Limit width for better readability */}
       <h1 className="text-3xl font-bold mb-8 text-center flex items-center justify-center">
         <Music className="w-8 h-8 mr-3 text-blue-500" /> {/* Add icon */}
-        ようこそ Anything in Anykeys へ！
+        ようこそ Anything in AnyKey へ！
       </h1>
 
       {/* What is this App? Section */}
@@ -23,7 +23,7 @@ const TutorialPage = () => {
         <CardContent>
           {/* Content from former CardDescription */}
           <p className="mb-4 text-gray-700 dark:text-gray-300">
-            Anything in Anykeys は、思いついた音楽フレーズや練習中のリックなどを「ABC Notation」というテキスト形式で手軽に記録し、管理、そして共有できる場所です。
+            Anything in AnyKey は、思いついた音楽フレーズや練習中のリックなどを「ABC Notation」というテキスト形式で手軽に記録し、管理、そして共有できる場所です。
           </p>
           <ul className="list-disc list-inside space-y-2 mb-4 text-gray-700 dark:text-gray-300">
             <li>
@@ -59,8 +59,7 @@ const TutorialPage = () => {
           {/* Use template literal for proper newline rendering in pre tag */}
           <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded mb-4 text-sm overflow-x-auto shadow-inner whitespace-pre-wrap"> {/* Add whitespace-pre-wrap */}
             <code className="dark:text-gray-300">
-              {`X:1
-T:ドレミ
+              {`T:ドレミ
 M:4/4
 L:1/4
 K:C
