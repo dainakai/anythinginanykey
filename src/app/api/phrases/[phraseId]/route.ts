@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
 
 // Get phrase details
 export async function GET(
@@ -97,41 +98,45 @@ export async function PUT(
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
   }
 
-  let dataToUpdate: Partial<Prisma.PhraseUpdateInput> = {};
+  let dataToUpdate: Prisma.PhraseUpdateInput = {}; // Use PhraseUpdateInput for better typing
+  let originalKey: string = 'C'; // Default key
+  let tagNames: string[] = [];
+
   try {
     const body = await request.json();
 
-    // Validate and add fields to update (abcNotation, originalKey, comment, tags)
+    // --- Validate abcNotation ---
     if (typeof body.abcNotation === 'string' && body.abcNotation.trim().length > 0) {
         dataToUpdate.abcNotation = body.abcNotation.trim();
+        // --- Extract Original Key from abcNotation ---
+        const parsed = parseAbcNotation(dataToUpdate.abcNotation as string); // Use the validated abcNotation
+        if (parsed && parsed.header?.key) {
+            originalKey = parsed.header.key;
+        }
+        dataToUpdate.originalKey = originalKey; // Add extracted key to data to be updated
     } else {
         return NextResponse.json({ error: 'abcNotation is required and cannot be empty.' }, { status: 400 });
     }
-    if (typeof body.originalKey === 'string' && body.originalKey.trim().length > 0) {
-        dataToUpdate.originalKey = body.originalKey.trim();
-    } else {
-        return NextResponse.json({ error: 'originalKey is required and cannot be empty.' }, { status: 400 });
-    }
-    if (body.comment !== undefined) { // Allow empty string or null
+
+    // --- Validate comment (optional) ---
+    if (body.comment !== undefined) {
         dataToUpdate.comment = typeof body.comment === 'string' ? body.comment.trim() : null;
     }
 
-    // Handle tags (assuming tags are sent as an array of strings)
+    // --- Validate tags (optional) ---
     if (Array.isArray(body.tags)) {
-        // This requires more complex logic:
-        // 1. Find or create tags based on the provided names.
-        // 2. Disconnect existing tags and connect the new set.
-        // This is often done within a transaction.
-        // For simplicity here, we might only update text fields initially.
-        // A separate endpoint for tag management might be better.
-        // console.warn("Tag update in PUT request is complex and not fully implemented here.");
-        // TODO: Implement tag updates if required via this endpoint
+        if (!body.tags.every((tag: any) => typeof tag === 'string')) {
+             return NextResponse.json({ error: 'tags must be an array of strings.' }, { status: 400 });
+        }
+        tagNames = body.tags; // Store tag names for processing later
     } else if (body.tags !== undefined) {
         return NextResponse.json({ error: 'tags must be an array of strings.' }, { status: 400 });
     }
 
-    if (Object.keys(dataToUpdate).length === 0) {
-      return NextResponse.json({ error: 'No valid fields provided for update' }, { status: 400 });
+    // REMOVED validation for body.originalKey here
+
+    if (!dataToUpdate.abcNotation) { // Check if essential data is present
+      return NextResponse.json({ error: 'No valid abcNotation provided for update' }, { status: 400 });
     }
 
   } catch (error) {
@@ -153,6 +158,19 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // --- Process Tags --- (Connect/Create Logic)
+    const tagConnectOrCreate = tagNames.map(name => ({
+        where: { name },
+        create: { name, type: 'user_defined', userId }, // Assuming user-defined tags for now
+    }));
+
+    // Add tag update logic to dataToUpdate
+    dataToUpdate.tags = {
+        set: [], // Disconnect all existing tags first
+        connectOrCreate: tagConnectOrCreate, // Then connect/create the new set
+    };
+
+
     // Perform the update
     const updatedPhrase = await prisma.phrase.update({
       where: {
@@ -166,6 +184,11 @@ export async function PUT(
     return NextResponse.json(updatedPhrase);
   } catch (error) {
     console.error('Error updating phrase:', error);
+     if (error instanceof SyntaxError) {
+        return NextResponse.json({ error: 'Invalid JSON format in request body' }, { status: 400 });
+    } else if (error instanceof Prisma.PrismaClientValidationError) {
+        return NextResponse.json({ error: 'Database validation error.', details: error.message }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
