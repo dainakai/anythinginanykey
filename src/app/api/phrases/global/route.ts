@@ -1,18 +1,12 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth'; // Assuming auth setup exists
-import { prisma } from '@/lib/prisma'; // Import prisma directly
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
-const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
+const DEFAULT_PAGE_LIMIT = 9;
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
+// Fetch globally shared phrases
 export async function GET(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || DEFAULT_PAGE_LIMIT.toString(), 10);
@@ -26,24 +20,20 @@ export async function GET(request: Request) {
   } else if (sortParam === 'createdAt_asc') {
     orderBy = { createdAt: 'asc' };
   } else if (sortParam === 'starCount_desc') {
-    // Note: starCount is not yet implemented in the schema based on tasks.md
-    // Assuming it will be added later. For now, it might sort unpredictably or can be removed.
-    orderBy = { starCount: 'desc' };
+    orderBy = { starCount: 'desc' }; // Order by stars
   }
-  // Add more sort options if needed
+  // Add more sort options if needed (e.g., popularity based on forks?)
 
   const whereClause: Prisma.PhraseWhereInput = {
-    userId: session.user.id,
+    isPublic: true, // Only fetch public phrases
   };
 
   if (tagFilter) {
     if (tagFilter === UNTAGGED_FILTER_VALUE) {
-      // Handle the special case for untagged phrases
       whereClause.tags = {
-        none: {}, // Select phrases with no associated tags
+        none: {},
       };
     } else {
-      // Original logic for filtering by a specific tag name
       whereClause.tags = {
         some: {
           name: tagFilter,
@@ -61,15 +51,14 @@ export async function GET(request: Request) {
         orderBy: orderBy,
         skip: skip,
         take: limit,
-        select: {
-          id: true,
-          abcNotation: true,
-          originalKey: true,
-          comment: true,
-          isPublic: true,
-          createdAt: true,
-          tags: {
-            select: { id: true, name: true }
+        include: {
+          tags: true, // Include associated tags
+          user: { // Include basic user info (author)
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            }
           }
         },
       })
@@ -77,11 +66,11 @@ export async function GET(request: Request) {
 
     const totalPages = Math.ceil(totalPhrases / limit);
 
-    // Also fetch all unique tags for the current user to populate the filter dropdown
-    const allUserTags = await prisma.tag.findMany({
+    // Fetch all unique tags used in *public* phrases for filtering
+    const allPublicTags = await prisma.tag.findMany({
         where: {
             phrases: {
-                some: { userId: session.user.id }
+                some: { isPublic: true }
             }
         },
         distinct: ['name']
@@ -96,11 +85,11 @@ export async function GET(request: Request) {
         limit,
       },
       filters: {
-          availableTags: allUserTags.map(t => t.name)
+          availableTags: allPublicTags.map(t => t.name)
       }
     });
   } catch (error) {
-    console.error('Error fetching user phrases:', error);
+    console.error('Error fetching global phrases:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

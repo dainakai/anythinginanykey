@@ -9,7 +9,7 @@ import { Tag } from '@prisma/client';
 export default function EditPhrasePage() {
   const router = useRouter();
   const params = useParams();
-  const phraseId = params.id as string;
+  const phraseId = params.phraseId as string;
 
   const [abcNotation, setAbcNotation] = useState('');
   const [comment, setComment] = useState('');
@@ -141,7 +141,10 @@ export default function EditPhrasePage() {
               id="abcNotation"
               rows={15}
               value={abcNotation}
-              onChange={(e) => setAbcNotation(e.target.value)}
+              onChange={(e) => {
+                  setAbcNotation(e.target.value);
+                  setPreviewError(null); // Reset preview error on change
+              }}
               required
               className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 font-mono"
             />

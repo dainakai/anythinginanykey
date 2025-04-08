@@ -10,7 +10,7 @@ done
 echo "Database is ready!"
 
 echo "Running Prisma migrations..."
-npx prisma migrate dev --name add_nextauth_models # Changed migration name
+npx prisma migrate deploy # Use deploy instead of dev for applying existing migrations
 
 echo "Starting the application..."
 # Dockerfile の CMD で指定されたコマンドを実行
