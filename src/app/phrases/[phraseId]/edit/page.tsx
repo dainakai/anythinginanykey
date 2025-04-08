@@ -1,3 +1,10 @@
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import PhraseForm from '@/components/PhraseForm';
+import { redirect } from 'next/navigation';
+
+export const runtime = 'edge';
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';

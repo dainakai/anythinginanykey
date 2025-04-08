@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma'; // Changed to import from lib
 import { auth } from "@/auth";
 import { parseAbcNotation } from '@/lib/abcParser';
 
+export const runtime = 'edge'; // Added Edge runtime config
+
 // const prisma = new PrismaClient(); // Removed direct instantiation
 
 export async function POST(request: Request) {

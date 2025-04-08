@@ -3,6 +3,8 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
+export const runtime = 'edge';
+
 // Update user profile (currently only name)
 export async function PATCH(request: NextRequest) {
   const session = await auth();

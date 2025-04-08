@@ -1,6 +1,5 @@
-'use client';
-
-import React, { useState, useEffect, useCallback } from 'react';
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
@@ -8,6 +7,8 @@ import { useSession } from 'next-auth/react'; // Import useSession to get user d
 import Image from 'next/image'; // Import next/image
 // Import necessary icons
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+
+export const runtime = 'edge'; // Added Edge runtime config
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.
