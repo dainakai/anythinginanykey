@@ -1,11 +1,6 @@
-import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
-import PhraseForm from '@/components/PhraseForm';
-import { redirect } from 'next/navigation';
+'use client';
 
 export const runtime = 'edge';
-
-'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
