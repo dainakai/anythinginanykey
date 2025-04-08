@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
 import { useSession } from 'next-auth/react'; // Import useSession to get user data
 import Image from 'next/image'; // Import next/image
+// Import necessary icons
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.
@@ -383,21 +385,23 @@ const PhraseDetailPage: React.FC = () => {
 
     return (
         <div className="container mx-auto p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">フレーズ詳細</h1>
-                <div className="flex items-center gap-4">
+            {/* Header Section - Adjusted for responsiveness */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h1 className="text-2xl sm:text-3xl font-bold">フレーズ詳細</h1>
+                {/* Button Group - Adjusted for responsiveness */}
+                <div className="flex items-center flex-wrap gap-2 sm:gap-3">
                      {/* --- Star Button --- */}
                      {session && phraseData && (
                         <button
                             onClick={handleStarToggle}
                             disabled={isStarrting}
-                            className={`flex items-center px-3 py-1.5 border rounded transition-colors disabled:opacity-50 ${ phraseData.userHasStarred
+                            className={`flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 border rounded text-xs sm:text-sm transition-colors disabled:opacity-50 ${ phraseData.userHasStarred
                                     ? 'border-yellow-500 bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                                     : 'border-gray-300 text-gray-600 hover:bg-gray-100'
                                 }`}
                             aria-label={phraseData.userHasStarred ? 'スターを外す' : 'スターを付ける'}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 mr-1 ${phraseData.userHasStarred ? 'text-yellow-500' : 'text-gray-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 sm:h-5 sm:w-5 mr-1 ${phraseData.userHasStarred ? 'text-yellow-500' : 'text-gray-400'}`} viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
                             <span>{phraseData.starCount ?? 0}</span>
@@ -410,11 +414,11 @@ const PhraseDetailPage: React.FC = () => {
                         <button
                             onClick={handleFork}
                             disabled={isForking}
-                            className="flex items-center px-3 py-1.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            className="flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded text-xs sm:text-sm text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
                             aria-label="このフレーズをフォークする"
                         >
                             {/* Basic Fork Icon Placeholder */}
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /> {/* Simple folder-like icon */} 
                               {/* Better fork icon: <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l7.5-5M15 15l6-6m-6 6v7" /> */}
                             </svg>
@@ -422,22 +426,21 @@ const PhraseDetailPage: React.FC = () => {
                         </button>
                     )}
                     {/* -------------------------------------------------------- */}
+                    {/* --- Edit/Delete Buttons (Owner only) --- */}
                     {isOwner && (
-                        <div className="flex gap-2">
-                            <Link href={`/phrases/${phraseId}/edit`}>
-                                <button
-                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                                    disabled={isLoading || !!loadError}
-                                >
-                                    編集
-                                </button>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <Link href={`/phrases/${phraseId}/edit`} className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded text-xs sm:text-sm text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50">
+                                <PencilIcon className="h-4 w-4 mr-1" />
+                                <span>編集</span>
                             </Link>
                             <button
                                 onClick={handleDelete}
-                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                                className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 border border-red-300 rounded text-xs sm:text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
                                 disabled={isDeleting || isLoading || !!loadError}
+                                aria-label="削除"
                             >
-                                {isDeleting ? '削除中...' : '削除'}
+                                <TrashIcon className="h-4 w-4 mr-1" />
+                                <span>{isDeleting ? '削除中...' : '削除'}</span>
                             </button>
                         </div>
                     )}
@@ -466,12 +469,14 @@ const PhraseDetailPage: React.FC = () => {
             )}
 
             {/* Section for Score */}
-            <div className="mb-8 p-4 border rounded shadow-md bg-white">
+            <div className="mb-8 p-4 border rounded shadow-md bg-white overflow-x-auto">
                 <h2 className="text-xl font-semibold mb-4">楽譜</h2>
                 <AbcNotationRenderer
                     key={phraseData.id}
                     abcNotation={phraseData.abcNotation}
                     onError={handleRenderError}
+                    engraverParams={{ responsive: 'resize' }}
+                    renderParams={{ staffwidth: 740 }}
                 />
                 {renderError && <p className="text-red-500 mt-2">楽譜の描画エラー: {renderError.message}</p>}
             </div>
@@ -479,7 +484,8 @@ const PhraseDetailPage: React.FC = () => {
             {/* Section for Transposed Scores */}
             <div className="mb-8 p-4 border rounded shadow-md bg-white">
                 <h2 className="text-xl font-semibold mb-4">全キー移調表示</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                {/* Transposed grid - Adjusted for responsiveness */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     {displayKeys.map((targetKey) => {
                         const transposeAmount = getTransposeAmount(phraseData.originalKey, targetKey);
                         const renderParams = { visualTranspose: transposeAmount };
@@ -492,8 +498,8 @@ const PhraseDetailPage: React.FC = () => {
                             .replace(/(^|\n)M:.*\n?/g, '\n'); // Remove M: line
 
                         return (
-                            <div key={uniqueKey} className="border rounded p-3 bg-gray-50">
-                                <h3 className="text-lg font-medium mb-2">Key: {targetKey}</h3>
+                            <div key={uniqueKey} className="border rounded p-2 sm:p-3 bg-gray-50">
+                                <h3 className="text-base sm:text-lg font-medium mb-2">Key: {targetKey}</h3>
                                 <AbcNotationRenderer
                                     // Using uniqueKey here as well, forces re-render if needed
                                     key={uniqueKey}
@@ -509,10 +515,10 @@ const PhraseDetailPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Section for Metadata */}
+            {/* Section for Metadata - Adjusted gaps */}
             <div className="mb-8 p-4 border rounded shadow-md bg-gray-50">
                 <h2 className="text-xl font-semibold mb-4">情報</h2>
-                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 sm:gap-y-2">
                     <div className="col-span-1">
                         <dt className="font-medium text-gray-600">元のキー:</dt>
                         <dd className="text-gray-800">{phraseData.originalKey}</dd>
@@ -602,14 +608,16 @@ const PhraseDetailPage: React.FC = () => {
                         return (
                             <div key={comment.id} className="p-3 border-b last:border-b-0">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex items-center space-x-2 mb-1">
-                                       {comment.user.image ? (
-                                          <Image src={comment.user.image} alt={comment.user.name || 'User'} width={20} height={20} className="rounded-full" />
-                                       ) : (
-                                          <span className="h-6 w-6 rounded-full bg-gray-300 inline-block"></span>
-                                       )}
-                                       <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
-                                       <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1">
+                                       <div className="flex items-center space-x-2 mb-1 sm:mb-0"> {/* Wrap image and name */} 
+                                          {comment.user.image ? (
+                                             <Image src={comment.user.image} alt={comment.user.name || 'User'} width={20} height={20} className="rounded-full" />
+                                          ) : (
+                                             <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span> // Adjusted size
+                                          )}
+                                          <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
+                                       </div>
+                                       <span className="text-xs text-gray-500 pl-7 sm:pl-0">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
                                     </div>
                                     {/* --- Delete Comment Button --- */}
                                     {isCommentOwner && (
@@ -624,7 +632,7 @@ const PhraseDetailPage: React.FC = () => {
                                     )}
                                     {/* --------------------------- */}
                                 </div>
-                                <p className="text-gray-800 whitespace-pre-wrap pl-8">{comment.content}</p> {/* Indent content slightly */} 
+                                <p className="text-gray-800 whitespace-pre-wrap pl-7 sm:pl-8">{comment.content}</p> {/* Adjusted indent */} 
                             </div>
                         );
                      })}

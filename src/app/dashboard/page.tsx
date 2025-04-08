@@ -212,15 +212,17 @@ function DashboardContent() {
   // The actual JSX structure
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold">マイフレーズライブラリ</h1>
-          <div className="flex items-center gap-4">
+      {/* Header Section - Adjusted for responsiveness */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">マイフレーズライブラリ</h1>
+          {/* Button Group */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               {/* Link to Tag Management */}
-              <Link href="/dashboard/tags" className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              <Link href="/dashboard/tags" className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap">
                 タグを管理
               </Link>
               {/* Add New Phrase Button */}
-              <Link href="/phrases/new" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              <Link href="/phrases/new" className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap">
                 新しいフレーズを作成
               </Link>
           </div>
@@ -258,10 +260,10 @@ function DashboardContent() {
       )}
       {/* ----------------------- */}
 
-      {/* Filter and Sort Controls */}
-      <div className="flex flex-wrap gap-4 mb-6 items-center">
-        <div>
-          <label htmlFor="tag-filter" className="block text-sm font-medium text-gray-700 mr-2">タグで絞り込み:</label>
+      {/* Filter and Sort Controls - Adjusted for responsiveness */}
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 items-start sm:items-center">
+        <div className="w-full sm:w-auto">
+          <label htmlFor="tag-filter" className="block text-sm font-medium text-gray-700 mb-1 sm:mb-0 sm:mr-2">タグで絞り込み:</label>
           <select
             id="tag-filter"
             value={currentTag}
@@ -277,8 +279,8 @@ function DashboardContent() {
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor="sort-order" className="block text-sm font-medium text-gray-700 mr-2">並び順:</label>
+        <div className="w-full sm:w-auto">
+          <label htmlFor="sort-order" className="block text-sm font-medium text-gray-700 mb-1 sm:mb-0 sm:mr-2">並び順:</label>
           <select
             id="sort-order"
             value={currentSort}
@@ -301,19 +303,22 @@ function DashboardContent() {
 
       {!loading && !error && phrases.length > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Grid layout adjusted for responsiveness */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
             {phrases.map((phrase) => {
                 // Keep the parameters that achieved the desired density
-                const engraverParams = { responsive: 'resize', staffwidth: 500 };
-                const renderParams = { scale: 1.3 };
+                const engraverParams = { responsive: 'resize', staffwidth: 500 }; // Consider adjusting staffwidth based on viewport?
+                const renderParams = { scale: 1.2 }; // Adjusted scale slightly
                 const isUpdating = updatingPhraseId === phrase.id;
 
                 return (
-                  <div key={phrase.id} className="border rounded-lg p-4 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
-                    <h2 className="text-xl font-semibold mb-2 truncate">
+                  // Added more padding on mobile (p-4), slightly less on larger screens (sm:p-5)
+                  <div key={phrase.id} className="border rounded-lg p-4 sm:p-5 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
+                    <h2 className="text-lg sm:text-xl font-semibold mb-2 truncate">
                       {phrase.abcNotation.match(/T:\s*(.*)/)?.[1] || '無題のフレーズ'}
                     </h2>
-                    <div className="mb-3 w-full">
+                    {/* Renderer container with aspect ratio or min-height might be needed for consistent height */}
+                    <div className="mb-3 w-full min-h-[100px]"> {/* Added min-height for consistency */}
                       <AbcNotationRenderer
                         key={`${phrase.id}-preview`}
                         abcNotation={phrase.abcNotation}
@@ -350,8 +355,10 @@ function DashboardContent() {
                        </label>
                      </div>
                     {/* ----------------------------- */}
-                    <p className="text-xs text-gray-500 mb-3">登録日時: {new Date(phrase.createdAt).toLocaleString()}</p>
-                    <Link href={`/phrases/${phrase.id}`} className="text-blue-600 hover:underline mt-auto self-start">
+                    <p className="text-xs text-gray-500 mb-3 mt-2"> {/* Added mt-2 for spacing */} 
+                        登録日時: {new Date(phrase.createdAt).toLocaleString()}
+                    </p>
+                    <Link href={`/phrases/${phrase.id}`} className="text-blue-600 hover:underline mt-auto self-start text-sm sm:text-base">
                       詳細を見る
                     </Link>
                   </div>
