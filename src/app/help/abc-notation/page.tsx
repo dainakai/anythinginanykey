@@ -25,7 +25,7 @@ export default function AbcNotationHelpPage() {
       {/* Explanation of the example */}
       <div className="mt-6 p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
         <h3 className="text-lg font-semibold mb-2">エディタの例 解説</h3>
-        <p>現在エディタに表示されているのは "Cry Me a River" のリック（短いフレーズ）の例です。</p>
+        <p>現在エディタに表示されているのは &quot;Cry Me a River&quot; のリック（短いフレーズ）の例です。</p>
         <pre className="bg-gray-100 p-3 rounded my-2 text-sm overflow-x-auto dark:bg-gray-900 dark:text-gray-300">
             <code>{exampleForUser}</code>
         </pre>
@@ -33,7 +33,7 @@ export default function AbcNotationHelpPage() {
             <li><code>T:Cry me a river lick</code>: 曲のタイトルを指定します。</li>
             <li><code>L:1/8</code>: 基本となる音符の長さを八分音符 (1/8) に設定します。</li>
             <li><code>K:A</code>: 曲の調号をイ長調 (A Major) に設定します。シャープが3つ付きます。</li>
-            <li><code>"E7"</code> と <code>"Amaj7"</code>: コードネームです。音符の上に表示されます。</li>
+            <li><code>&quot;E7&quot;</code> と <code>&quot;Amaj7&quot;</code>: コードネームです。音符の上に表示されます。</li>
             <li><code>=g2</code>: Gナチュラル（♮G）の音符を四分音符（基本の1/8の2倍）の長さで演奏します。<code>=</code> はナチュラル記号です。</li>
             <li><code>(3 =f=cG</code>: Fナチュラル、C、Gの3つの音符を八分音符3つ分の長さで演奏する三連符です。<code>(3</code> が三連符の開始を示します。</li>
             <li><code>=G2</code>: Gナチュラルの音符を四分音符の長さで。</li>
