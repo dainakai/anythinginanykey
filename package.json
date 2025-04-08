@@ -19,6 +19,7 @@
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "^5.10.2",
     "@radix-ui/react-navigation-menu": "^1.2.5",
+    "@radix-ui/react-slot": "^1.1.2",
     "abcjs": "^6.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
