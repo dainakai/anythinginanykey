@@ -17,6 +17,34 @@ import {
 } from "@/components/ui/navigation-menu"; // Import shadcn/ui NavigationMenu components
 import { cn } from "@/lib/utils"; // Import cn utility
 
+// ListItem component (from shadcn/ui docs)
+const ListItem = React.forwardRef<
+  React.ElementRef<"a">,
+  React.ComponentPropsWithoutRef<"a">
+>(({ className, title, children, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <a
+          ref={ref}
+          className={cn(
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors", // Removed default hover/focus colors
+            "hover:bg-gray-700 focus:bg-gray-700", // Use dark hover/focus
+            className
+          )}
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none text-white">{title}</div> {/* Ensure title text is visible */}
+          <p className="line-clamp-2 text-sm leading-snug text-gray-400"> {/* Adjust description color */}
+            {children}
+          </p>
+        </a>
+      </NavigationMenuLink>
+    </li>
+  )
+})
+ListItem.displayName = "ListItem"
+
 const Header = () => {
   const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -32,9 +60,21 @@ const Header = () => {
 
   // Help menu items
   const helpLinks = [
-    { href: '/help/abc-notation', title: 'ABC Notation ガイド', description: 'ABC Notation の基本的な書き方を解説します。' },
+    { href: '/tutorial', title: '初回チュートリアル', description: 'Anything in Anykeys の基本的な使い方を学びます。' },
+    { href: '/help/abc-notation', title: 'ABC Notation ガイド', description: 'ABC Notation の書き方とエディタの使い方を解説します。' },
     // Add other help items here
   ];
+
+  // Unified style for all navigation items including Help trigger
+  const navLinkStyle = cn(
+    navigationMenuTriggerStyle(),
+    "bg-transparent text-white", // Base colors
+    "hover:bg-gray-700 hover:text-white", // Hover state (dark background, white text)
+    "focus:bg-gray-700 focus:text-white", // Focus state (dark background, white text)
+    // Open state: Keep dark background BUT change text to dark
+    "data-[state=open]:bg-gray-100 data-[state=open]:text-gray-900", // Dark text when open
+    "transition-colors duration-200 ease-in-out" // Animation
+  );
 
   return (
     <header className="bg-gray-800 text-white shadow-md sticky top-0 z-50"> {/* Added sticky and z-index */}
@@ -45,50 +85,53 @@ const Header = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1"> {/* Adjusted space-x */}
+        <nav className="hidden md:flex items-center space-x-2"> {/* Adjusted space */}
           {session && (
-            <NavigationMenu>
-              <NavigationMenuList>
-                {navLinks.map((link) => (
-                  <NavigationMenuItem key={link.href}>
-                    <Link href={link.href} legacyBehavior passHref>
-                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                        {link.label}
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                ))}
+            <> {/* Use Fragment to group NavMenu and Settings Link */}
+              <NavigationMenu>
+                <NavigationMenuList>
+                  {navLinks.map((link) => (
+                    <NavigationMenuItem key={link.href}>
+                      <Link href={link.href} legacyBehavior passHref>
+                        {/* Use the common style */}
+                        <NavigationMenuLink className={navLinkStyle}>
+                          {link.label}
+                        </NavigationMenuLink>
+                      </Link>
+                    </NavigationMenuItem>
+                  ))}
 
-                {/* Help Menu */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>
-                     <QuestionMarkCircleIcon className="h-5 w-5 mr-1 inline" /> ヘルプ
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] ">
-                      {helpLinks.map((component) => (
-                        <ListItem
-                          key={component.title}
-                          title={component.title}
-                          href={component.href}
-                        >
-                          {component.description}
-                        </ListItem>
-                      ))}
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-                {/* Settings Icon */}
-                <NavigationMenuItem>
-                   <Link href="/settings" legacyBehavior passHref>
-                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                       <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" title="設定" />
-                       <span className="sr-only">設定</span>
-                     </NavigationMenuLink>
-                   </Link>
-                 </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
+                  {/* Help Menu */}
+                  <NavigationMenuItem>
+                    {/* Apply the unified style to the trigger */}
+                    <NavigationMenuTrigger className={navLinkStyle}>
+                       <QuestionMarkCircleIcon className="h-5 w-5 mr-1 inline" /> ヘルプ
+                    </NavigationMenuTrigger>
+                     {/* Add NavigationMenuContent back */}
+                     <NavigationMenuContent>
+                      <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] bg-gray-800 border border-gray-700">
+                        {helpLinks.map((component) => (
+                          <ListItem
+                            key={component.title}
+                            title={component.title}
+                            href={component.href}
+                            className="hover:bg-gray-700 focus:bg-gray-700"
+                          >
+                            {component.description}
+                          </ListItem>
+                        ))}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+
+              {/* Settings Icon (Moved outside NavigationMenu) */}
+              <Link href="/settings" className="p-2 text-gray-300 hover:text-white transition-colors duration-200 ease-in-out" title="設定">
+                 <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
+                 <span className="sr-only">設定</span>
+              </Link>
+            </>
           )}
           <div className="ml-2"> {/* Position AuthButton slightly to the right */}
             <AuthButton />
@@ -98,7 +141,7 @@ const Header = () => {
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center">
           {session && (
-             <Link href="/settings" className="text-gray-400 hover:text-white mr-2" title="設定">
+             <Link href="/settings" className="text-gray-300 hover:text-white mr-2" title="設定"> {/* Keep mobile settings link simple */}
                <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
              </Link>
            )}
@@ -124,7 +167,7 @@ const Header = () => {
 
       {/* Mobile Menu Panel */}
       {session && (
-          <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:hidden`} id="mobile-menu">
+          <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:hidden bg-gray-800`} id="mobile-menu"> {/* Ensure mobile menu has dark background */}
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {navLinks.map((link) => (
                 <Link
@@ -138,7 +181,7 @@ const Header = () => {
               ))}
                {/* Mobile Help Menu */}
                <div>
-                 <span className="text-gray-400 px-3 py-2 text-xs font-medium uppercase">ヘルプ</span>
+                 <span className="text-gray-400 px-3 py-2 text-xs font-medium uppercase">ヘルプ & ガイド</span>
                  {helpLinks.map((link) => (
                    <Link
                      key={link.href}
@@ -168,34 +211,5 @@ const Header = () => {
     </header>
   );
 };
-
-
-// ListItem component (from shadcn/ui docs)
-const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        <a
-          ref={ref}
-          className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className
-          )}
-          {...props}
-        >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
-        </a>
-      </NavigationMenuLink>
-    </li>
-  )
-})
-ListItem.displayName = "ListItem"
-
 
 export default Header;
