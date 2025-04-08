@@ -6,6 +6,8 @@ import { Prisma } from '@prisma/client';
 const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
+export const runtime = 'edge';
+
 export async function GET(request: Request) {
   const session = await auth();
 

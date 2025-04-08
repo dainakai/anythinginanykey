@@ -6,6 +6,8 @@ import Link from 'next/link';
 import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client';
 
+export const runtime = 'edge';
+
 export default function EditPhrasePage() {
   const router = useRouter();
   const params = useParams();

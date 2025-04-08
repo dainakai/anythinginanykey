@@ -3,6 +3,8 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma, Tag } from '@prisma/client'; // Import Tag type
 
+export const runtime = 'edge';
+
 // GET /api/tags - Fetch available tags for the user and preset tags
 export async function GET(_request: Request) {
   const session = await auth();
