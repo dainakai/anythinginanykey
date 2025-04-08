@@ -35,7 +35,6 @@ export async function POST(
     }
     content = body.content.trim();
   } catch (_error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Invalid comments request body:', _error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
