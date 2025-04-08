@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client'; // Removed direct import
+import prisma from '@/lib/prisma'; // Changed to import from lib
 import { auth } from "@/auth";
 import { parseAbcNotation } from '@/lib/abcParser';
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient(); // Removed direct instantiation
 
 export async function POST(request: Request) {
   const session = await auth();

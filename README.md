@@ -82,6 +82,81 @@
   ```
   その後、ブラウザで `http://localhost:5555` にアクセスします。
 
+## Cloudflare Pages へのデプロイ
+
+このアプリケーションは Cloudflare Pages と Supabase を利用してデプロイできます。
+
+### 1. 前提条件
+
+-   Cloudflare アカウント
+-   Supabase アカウント (PostgreSQLデータベース用)
+-   Google Cloud Platform アカウント (OAuth認証情報用)
+
+### 2. Supabase の設定
+
+1.  **プロジェクト作成:** Supabase で新規プロジェクトを作成します（無料プランで開始可能）。
+2.  **接続URIの取得:** 作成したプロジェクトの「Settings」>「Database」>「Connection string」>「URI」タブから、**必ずパスワードを含んだ状態の** 接続URIをコピーします。これが後述する `DATABASE_URL` 環境変数になります。
+3.  **コネクションの選択** Direct Connection以外を選択してください。
+
+### 3. Cloudflare Pages の設定
+
+1.  **リポジトリ連携:** Cloudflare ダッシュボードから「Workers & Pages」>「アプリケーションを作成」>「Pages」>「Gitリポジトリに接続」を選択し、このGitHubリポジトリを選択します。
+2.  **ビルド設定:**
+    *   **プロダクションブランチ:** デプロイしたいブランチ (例: `main`) を選択します。
+    *   **フレームワークプリセット:** 「Next.js」を選択します。
+    *   **ビルドコマンド:** `npm run build` (または `prisma generate && next build`)
+    *   **ビルド出力ディレクトリ:** `.next`
+    *   **環境変数 (ビルド環境と運用環境):**
+        *   `DATABASE_URL`: 手順2で取得したSupabaseの接続URIを設定します。
+        *   `NEXTAUTH_URL`: Cloudflare Pages でデプロイ後に割り当てられるURL (例: `https://your-project-name.pages.dev`) を設定します。
+        *   `NEXTAUTH_SECRET`: 新しいランダムな文字列 (例: `openssl rand -hex 32` で生成) を設定します。ローカルと同じである必要はありません。
+        *   `GOOGLE_CLIENT_ID`: ローカルの `.env` と同じ Google Client ID を設定します。
+        *   `GOOGLE_CLIENT_SECRET`: ローカルの `.env` と同じ Google Client Secret を設定します。
+        *   `NODE_VERSION`: プロジェクトで使用しているNode.jsのバージョン (例: `20`) を指定しておくと安定します。
+        *   その他、アプリケーションが必要とする環境変数があれば追加します。
+
+### 4. Google OAuth 設定の更新
+
+Google Cloud Console の認証情報設定画面で、Cloudflare Pages のデプロイURLからリダイレクトされるURIを「承認済みのリダイレクト URI」に追加します。
+通常は `https://<your-project-name.pages.dev>/api/auth/callback/google` の形式です。
+
+### 5. 初回デプロイとデータベース初期化
+
+1.  **デプロイ実行:** Cloudflare Pages で「保存してデプロイする」をクリックします。ビルドとデプロイが開始されます。
+2.  **データベースマイグレーション:** **デプロイ完了後**、ご自身の**ローカルマシン**のターミナルから、以下のコマンドを実行して本番データベース (Supabase) のスキーマを作成します。**`<Supabase接続URI>` は手順2で取得したものに置き換えてください。**
+    ```bash
+    DATABASE_URL="<Supabase接続URI>" npx prisma migrate deploy
+    ```
+3.  **プリセットタグ投入:** 同様に、ローカルマシンから以下のコマンドを実行して、初期データを投入します。（`prisma/seed.ts` が実行されます）
+    ```bash
+    DATABASE_URL="<Supabase接続URI>" npx prisma db seed
+    ```
+4.  **動作確認:** デプロイされたURL (`https://your-project-name.pages.dev`) にアクセスし、アプリケーションが正しく表示され、Googleログインやデータベースへのアクセス（フレーズ表示など）が機能するか確認します。
+
+## 機能追加・更新時のデプロイフロー
+
+1.  **ローカルでの開発:**
+    *   コードを修正します。
+    *   データベースのスキーマ変更が必要な場合は `prisma/schema.prisma` を編集します。
+2.  **ローカルでのマイグレーション (スキーマ変更時):**
+    *   `prisma/schema.prisma` を編集した場合、ローカルの開発環境に対してマイグレーションを実行します。
+        ```bash
+        npx prisma migrate dev --name <分かりやすいマイグレーション名>
+        ```
+    *   これにより `prisma/migrations` ディレクトリに新しいSQLファイルが生成されます。
+3.  **Git 操作:**
+    *   変更したコード (`.ts`, `.tsx` ファイルなど)、`prisma/schema.prisma` (変更した場合)、`prisma/migrations` 内の新しいマイグレーションファイル、をすべてGitにコミットし、GitHubにプッシュします。
+4.  **Cloudflare Pages での自動デプロイ:**
+    *   GitHubへのプッシュをトリガーとして、Cloudflare Pages が自動的に新しいコードでビルドとデプロイを実行します。
+5.  **本番データベースへのマイグレーション適用 (スキーマ変更時):**
+    *   **Cloudflare Pages のデプロイが完了した後**、スキーマ変更を行った場合は、初回デプロイ時と同様に**ローカルマシン**から本番データベース (Supabase) へマイグレーションを適用します。
+        ```bash
+        DATABASE_URL="<Supabase接続URI>" npx prisma migrate deploy
+        ```
+    *   **注意:** `prisma migrate deploy` は `prisma/migrations` に記録されている未適用のマイグレーションを実行します。ローカルで `prisma migrate dev` を実行し忘れたり、生成されたファイルをコミットし忘れると、本番DBは更新されません。
+6.  **動作確認:**
+    *   デプロイされたURLにアクセスし、更新内容が正しく反映されているか確認します。
+
 ## 機能概要
 
 - **ダッシュボード (`/dashboard`):**

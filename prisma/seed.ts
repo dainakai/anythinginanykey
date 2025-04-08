@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+// import prisma from '../src/lib/prisma'; // Reverted: Removed import from lib
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(); // Reverted: Use direct instantiation for seeding
 
 // Define preset tags
 const presetTags = [
