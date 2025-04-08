@@ -21,6 +21,8 @@ model User {
   phrases       Phrase[]
   accounts      Account[] // Add relation to Account
   sessions      Session[] // Add relation to Session
+  stars         Star[]    // Add relation to Star model
+  comments      Comment[] // Add relation to Comment model
 }
 
 // Add Account model
@@ -74,6 +76,8 @@ model Phrase {
   userId       String
   user         User     @relation(fields: [userId], references: [id])
   tags         Tag[]
+  stars        Star[]
+  comments     Comment[]
 }
 
 model Tag {
@@ -84,4 +88,28 @@ model Tag {
   updatedAt DateTime @updatedAt
   userId    String?
   phrases   Phrase[]
+}
+
+// Add Star model
+model Star {
+  userId    String
+  phraseId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, phraseId]) // Composite primary key
+}
+
+// Add Comment model
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  userId    String
+  phraseId  String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
 }
