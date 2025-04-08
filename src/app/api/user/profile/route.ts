@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
-// Update user profile name
-export async function PUT(request: Request) {
+// Update user profile (currently only name)
+export async function PATCH(request: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -11,38 +12,49 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let name: string;
+  let nameToUpdate: string | undefined;
+
   try {
     const body = await request.json();
-    // Basic validation for name
-    if (typeof body.name !== 'string' || body.name.trim().length === 0 || body.name.length > 50) { // Example length limit
-      return NextResponse.json({ error: 'Invalid value for name. Must be a non-empty string up to 50 characters.' }, { status: 400 });
+
+    // Validate name
+    if (typeof body.name === 'string' && body.name.trim().length > 0) {
+      nameToUpdate = body.name.trim();
+    } else if (body.name !== undefined) { // Allow empty string if sent explicitly?
+       // Policy decision: Allow setting name to empty or require non-empty?
+       // Current: Requires non-empty if 'name' key is present.
+       return NextResponse.json({ error: 'Name cannot be empty' }, { status: 400 });
     }
-    name = body.name.trim();
+
+    if (nameToUpdate === undefined) {
+         return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
   } catch (error) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
   try {
     const updatedUser = await prisma.user.update({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       data: {
-        name: name,
+        name: nameToUpdate,
       },
-      select: { // Return only non-sensitive fields
+      select: { // Return only necessary fields
         id: true,
         name: true,
-        email: true,
+        email: true, // Consider if email should be returned
         image: true,
-      }
+      },
     });
 
     return NextResponse.json(updatedUser);
+
   } catch (error) {
-    console.error('Error updating user profile name:', error);
-    // Consider specific error handling, e.g., if the user wasn't found (though unlikely if authenticated)
+    console.error('Error updating user profile:', error);
+     if (error instanceof Prisma.PrismaClientValidationError) {
+        return NextResponse.json({ error: 'Database validation error.', details: error.message }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
