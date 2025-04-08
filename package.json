@@ -11,7 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "seed:compile": "tsc -p prisma/tsconfig.seed.json",
-    "seed:run": "docker-compose exec -T web node prisma/dist/seed.js",
+    "seed:run": "docker-compose exec -T web node -r dotenv/config prisma/dist/seed.js",
     "seed": "npm run seed:compile && npm run seed:run"
   },
   "dependencies": {
@@ -35,6 +35,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.4.7",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "eslint-config-prettier": "^10.1.1",
