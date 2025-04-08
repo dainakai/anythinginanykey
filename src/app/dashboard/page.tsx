@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client';
 import PaginationControls from '@/components/PaginationControls';
+// Assuming shadcn/ui is installed - import Switch
+// import { Switch } from "@/components/ui/switch";
+// import { Label } from "@/components/ui/label";
 
 interface Phrase {
   id: string;
@@ -14,6 +17,7 @@ interface Phrase {
   comment: string | null;
   createdAt: string;
   tags: Tag[];
+  isPublic: boolean;
   // Add other necessary fields based on your API response
 }
 
@@ -41,6 +45,7 @@ function DashboardContent() {
   const [filters, setFilters] = useState<FilterInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingPhraseId, setUpdatingPhraseId] = useState<string | null>(null);
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const currentTag = searchParams.get('tag') || '';
@@ -117,6 +122,46 @@ function DashboardContent() {
     updateSearchParams({ sort: event.target.value });
   };
 
+  // --- Handle Publish Toggle ---
+  const handlePublishToggle = async (phraseId: string, currentIsPublic: boolean) => {
+    setUpdatingPhraseId(phraseId); // Set loading state for this specific phrase
+    setError(null); // Clear previous errors
+
+    const newIsPublic = !currentIsPublic;
+
+    try {
+      const response = await fetch(`/api/phrases/${phraseId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isPublic: newIsPublic }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      // Update the local state to reflect the change immediately
+      setPhrases(prevPhrases =>
+        prevPhrases.map(p =>
+          p.id === phraseId ? { ...p, isPublic: newIsPublic } : p
+        )
+      );
+
+    } catch (e: unknown) {
+        console.error('Failed to update phrase publish status:', e);
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        // Display error specific to this action, maybe near the switch?
+        // For simplicity, using the general error state for now.
+        setError(`公開状態の更新に失敗しました: ${errorMessage}`);
+        // Revert UI optimistically if needed, or refetch data
+    } finally {
+        setUpdatingPhraseId(null); // Clear loading state for this phrase
+    }
+  };
+
   // The actual JSX structure
   return (
     <div className="container mx-auto px-4 py-8">
@@ -182,6 +227,7 @@ function DashboardContent() {
                 // Keep the parameters that achieved the desired density
                 const engraverParams = { responsive: 'resize', staffwidth: 500 };
                 const renderParams = { scale: 1.3 };
+                const isUpdating = updatingPhraseId === phrase.id;
 
                 return (
                   <div key={phrase.id} className="border rounded-lg p-4 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
@@ -210,6 +256,21 @@ function DashboardContent() {
                         </button>
                       ))}
                     </div>
+                    {/* --- Publish Toggle Checkbox --- */}
+                    <div className="flex items-center space-x-2 mt-4 mb-3">
+                       <input
+                         type="checkbox"
+                         id={`publish-checkbox-${phrase.id}`}
+                         checked={phrase.isPublic}
+                         onChange={() => handlePublishToggle(phrase.id, phrase.isPublic)}
+                         disabled={isUpdating} // Disable while updating
+                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                       />
+                       <label htmlFor={`publish-checkbox-${phrase.id}`} className={`text-sm ${isUpdating ? 'text-gray-400' : 'text-gray-600'}`}>
+                         {isUpdating ? '更新中...' : (phrase.isPublic ? '公開中' : '非公開')}
+                       </label>
+                     </div>
+                    {/* ----------------------------- */}
                     <p className="text-xs text-gray-500 mb-3">登録日時: {new Date(phrase.createdAt).toLocaleString()}</p>
                     <Link href={`/phrases/${phrase.id}`} className="text-blue-600 hover:underline mt-auto self-start">
                       詳細を見る

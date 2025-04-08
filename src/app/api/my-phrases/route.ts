@@ -61,8 +61,16 @@ export async function GET(request: Request) {
         orderBy: orderBy,
         skip: skip,
         take: limit,
-        include: {
-          tags: true, // Include associated tags
+        select: {
+          id: true,
+          abcNotation: true,
+          originalKey: true,
+          comment: true,
+          isPublic: true,
+          createdAt: true,
+          tags: {
+            select: { id: true, name: true }
+          }
         },
       })
     ]);
