@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
 
-// Define context type
+// Define context type with Promise for params
 interface RouteContext {
-  params: { phraseId: string };
+  params: Promise<{ phraseId: string }>; // Params is now a Promise
 }
 
 // Get phrase details
@@ -14,9 +14,9 @@ export async function GET(
   request: NextRequest,
   context: RouteContext // Use context object
 ) {
-  await request.text(); // Explicitly await request stream
-  const { params } = context; // Access params from context
-  const { phraseId } = params; // Destructure here
+  // await request.text(); // Remove this - likely not needed with correct params handling
+  const { params } = context; // Access params Promise from context
+  const { phraseId } = await params; // Await params to get the actual value
 
   const session = await auth();
   const userId = session?.user?.id; // Get user ID if logged in
@@ -94,8 +94,8 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext // Use context object
 ) {
-  const { params } = context; // Access params from context
-  const { phraseId } = params; // Destructure here
+  const { params } = context; // Access params Promise from context
+  const { phraseId } = await params; // Await params to get the actual value
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -208,8 +208,9 @@ export async function DELETE(
   request: NextRequest,
   context: RouteContext // Use context object
 ) {
-  const { params } = context; // Access params from context
-  const { phraseId } = params; // Destructure here
+  // await request.text(); // Remove this - likely not needed
+  const { params } = context; // Access params Promise from context
+  const { phraseId } = await params; // Await params to get the actual value
 
   const session = await auth();
   const userId = session?.user?.id;
