@@ -1,15 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
-interface Params {
-  params: {
-    phraseId: string; // The ID of the phrase to fork
-  };
+// Define context type with Promise for params
+interface RouteContext {
+  params: Promise<{ phraseId: string }>; // Params is now a Promise
 }
 
 // Fork a phrase into the current user's library
-export async function POST(request: Request, { params }: Params) {
+export async function POST(
+    request: NextRequest, // Use NextRequest
+    context: RouteContext // Use context object
+) {
+  const { params } = context; // Access params Promise from context
+  const { phraseId: originalPhraseId } = await params; // Await params to get the actual value
+
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -17,7 +22,6 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { phraseId: originalPhraseId } = params;
   if (!originalPhraseId) {
     return NextResponse.json({ error: 'Original Phrase ID is required' }, { status: 400 });
   }

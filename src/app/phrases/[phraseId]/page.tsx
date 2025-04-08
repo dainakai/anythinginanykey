@@ -108,6 +108,8 @@ const PhraseDetailPage: React.FC = () => {
     const [starError, setStarError] = useState<string | null>(null);
     const [isForking, setIsForking] = useState<boolean>(false);
     const [forkError, setForkError] = useState<string | null>(null);
+    const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+    const [deleteCommentError, setDeleteCommentError] = useState<string | null>(null);
 
     // --- Fetch phrase data --- (Runs once on mount)
     useEffect(() => {
@@ -319,6 +321,42 @@ const PhraseDetailPage: React.FC = () => {
             setForkError(`フォークに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsForking(false);
+        }
+    };
+
+    // --- Delete Comment Handler ---
+    const handleDeleteComment = async (commentId: string) => {
+        if (!commentId || deletingCommentId) return;
+
+        const confirmed = window.confirm('このコメントを本当に削除しますか？');
+        if (!confirmed) return;
+
+        setDeletingCommentId(commentId);
+        setDeleteCommentError(null);
+
+        try {
+            const response = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
+
+            if (!response.ok) {
+                 const errorData = await response.json().catch(() => ({}));
+                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            // Remove the comment from local state
+            setPhraseData(prevData => {
+                if (!prevData) return null;
+                return {
+                    ...prevData,
+                    comments: prevData.comments.filter(c => c.id !== commentId),
+                };
+            });
+
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            setDeleteCommentError(`コメントの削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+             // Optionally display error near the specific comment or globally
+        } finally {
+            setDeletingCommentId(null);
         }
     };
 
@@ -552,24 +590,43 @@ const PhraseDetailPage: React.FC = () => {
                 )}
                 {/* -------------------------------------------- */}
 
+                {deleteCommentError && <p className="text-red-500 text-sm mt-1 mb-4">{deleteCommentError}</p>} {/* Display general delete error */}
                 <div className="space-y-4 mt-4">
                     {phraseData?.comments?.length === 0 && (
                         <p className="text-gray-500">まだコメントはありません。</p>
                     )}
-                    {phraseData?.comments?.map(comment => (
-                        <div key={comment.id} className="p-3 border-b last:border-b-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                                {comment.user.image ? (
-                                    <img src={comment.user.image} alt={comment.user.name || 'User'} className="h-6 w-6 rounded-full" />
-                                ) : (
-                                    <span className="h-6 w-6 rounded-full bg-gray-300 inline-block"></span>
-                                )}
-                                <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
-                                <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
+                    {phraseData?.comments?.map(comment => {
+                         const isCommentOwner = loggedInUserId === comment.user.id;
+                         const isDeletingThisComment = deletingCommentId === comment.id;
+                        return (
+                            <div key={comment.id} className="p-3 border-b last:border-b-0">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center space-x-2 mb-1">
+                                       {comment.user.image ? (
+                                            <img src={comment.user.image} alt={comment.user.name || 'User'} className="h-6 w-6 rounded-full" />
+                                        ) : (
+                                            <span className="h-6 w-6 rounded-full bg-gray-300 inline-block"></span>
+                                        )}
+                                        <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
+                                        <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
+                                    </div>
+                                    {/* --- Delete Comment Button --- */}
+                                    {isCommentOwner && (
+                                        <button
+                                            onClick={() => handleDeleteComment(comment.id)}
+                                            disabled={isDeletingThisComment}
+                                            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 p-1"
+                                            aria-label="コメントを削除"
+                                        >
+                                            {isDeletingThisComment ? '削除中...' : '削除'}
+                                        </button>
+                                    )}
+                                    {/* --------------------------- */}
+                                </div>
+                                <p className="text-gray-800 whitespace-pre-wrap pl-8">{comment.content}</p> {/* Indent content slightly */} 
                             </div>
-                            <p className="text-gray-800 whitespace-pre-wrap">{comment.content}</p>
-                        </div>
-                    ))}
+                        );
+                     })}
                 </div>
             </div>
 
