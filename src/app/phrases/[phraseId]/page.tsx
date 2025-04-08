@@ -75,7 +75,7 @@ interface PhraseData {
 const PhraseDetailPage: React.FC = () => {
     const params = useParams();
     const router = useRouter(); // Initialize useRouter
-    const phraseId = params?.id as string; // Get phrase ID from route
+    const phraseId = params?.phraseId as string; // Get phrase ID using the directory name
 
     const [phraseData, setPhraseData] = useState<PhraseData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);

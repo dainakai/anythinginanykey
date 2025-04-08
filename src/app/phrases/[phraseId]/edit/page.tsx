@@ -9,7 +9,7 @@ import { Tag } from '@prisma/client';
 export default function EditPhrasePage() {
   const router = useRouter();
   const params = useParams();
-  const phraseId = params.id as string;
+  const phraseId = params.phraseId as string;
 
   const [abcNotation, setAbcNotation] = useState('');
   const [comment, setComment] = useState('');
