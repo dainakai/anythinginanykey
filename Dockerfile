@@ -16,6 +16,8 @@ RUN npm install --legacy-peer-deps
 
 # Copy prisma schema
 COPY prisma ./prisma/
+# Force cache invalidation for generate step by re-copying schema
+COPY prisma/schema.prisma ./prisma/schema.prisma
 # Generate prisma client (uses installed node_modules)
 RUN npx prisma generate
 
