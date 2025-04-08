@@ -34,7 +34,9 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid value for content. Must be a non-empty string up to 1000 characters.' }, { status: 400 });
     }
     content = body.content.trim();
-  } catch (error) {
+  } catch (_error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    console.error('Invalid comments request body:', _error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
@@ -77,7 +79,6 @@ export async function POST(
     return NextResponse.json(newComment, { status: 201 });
 
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Error adding comment:', error);
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // Handle potential errors like foreign key constraints, etc.

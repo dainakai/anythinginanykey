@@ -152,7 +152,6 @@ export async function PUT(
     }
 
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Invalid PUT request body:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }

@@ -31,7 +31,6 @@ export async function PATCH(request: NextRequest) {
     }
 
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.error('Invalid profile request body:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
