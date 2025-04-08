@@ -4,14 +4,21 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
 
+// Define context type
+interface RouteContext {
+  params: { phraseId: string };
+}
+
 // Get phrase details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { phraseId: string } }
+  context: RouteContext // Use context object
 ) {
+  const { params } = context; // Access params from context
+  const { phraseId } = params; // Destructure here
+
   const session = await auth();
   const userId = session?.user?.id; // Get user ID if logged in
-  const { phraseId } = params;
 
   if (!phraseId) {
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
@@ -84,8 +91,11 @@ export async function GET(
 // Update phrase details
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { phraseId: string } }
+  context: RouteContext // Use context object
 ) {
+  const { params } = context; // Access params from context
+  const { phraseId } = params; // Destructure here
+
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -93,7 +103,6 @@ export async function PUT(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { phraseId } = params;
   if (!phraseId) {
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
   }
@@ -196,8 +205,11 @@ export async function PUT(
 // Delete a phrase
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { phraseId: string } }
+  context: RouteContext // Use context object
 ) {
+  const { params } = context; // Access params from context
+  const { phraseId } = params; // Destructure here
+
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -205,7 +217,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { phraseId } = params;
   if (!phraseId) {
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
   }
