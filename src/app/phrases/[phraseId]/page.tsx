@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
+import { useSession } from 'next-auth/react'; // Import useSession to get user data
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.
@@ -56,25 +57,42 @@ const AbcNotationRenderer = dynamic(() => import('@/components/AbcNotationRender
     loading: () => <p>Loading renderer...</p> // Optional loading indicator
 });
 
-// Define type for the fetched phrase data (adjust based on actual API response)
+// Update PhraseData interface to include comments and potentially userHasStarred
+interface CommentData {
+    id: string;
+    content: string;
+    createdAt: string;
+    user: {
+        id: string;
+        name: string | null;
+        image: string | null;
+    };
+}
+
 interface PhraseData {
     id: string;
     abcNotation: string;
     originalKey: string;
     comment: string | null;
-    createdAt: string; // Assuming createdAt is a string for simplicity
-    updatedAt: string; // Assuming updatedAt is a string for simplicity
+    createdAt: string;
+    updatedAt: string;
     user: {
         id: string;
         name: string | null;
-    } | null; // User might be null if not properly populated
-    tags: { name: string }[]; // Assuming API returns tags like this
-    // Add other relevant fields like starCount, isPublic, etc. based on your model
+        image: string | null; // Added image for consistency
+    } | null;
+    tags: { name: string }[];
+    starCount: number; // Assuming API provides this
+    isPublic: boolean; // Assuming API provides this
+    comments: CommentData[]; // Add comments array
+    userHasStarred?: boolean; // Optional: Provided by API
 }
 
 const PhraseDetailPage: React.FC = () => {
     const params = useParams();
     const router = useRouter(); // Initialize useRouter
+    const { data: session } = useSession(); // Get session data
+    const loggedInUserId = session?.user?.id;
     const phraseId = params?.phraseId as string; // Get phrase ID using the directory name
 
     const [phraseData, setPhraseData] = useState<PhraseData | null>(null);
@@ -167,6 +185,9 @@ const PhraseDetailPage: React.FC = () => {
         }
     };
 
+    // Determine if the current user is the owner
+    const isOwner = !!session && !!phraseData && phraseData.user?.id === loggedInUserId;
+
     // --- Render Logic ---
     if (isLoading) {
         return <div className="container mx-auto p-4">読み込み中...</div>;
@@ -188,24 +209,26 @@ const PhraseDetailPage: React.FC = () => {
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">フレーズ詳細</h1>
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                    <Link href={`/phrases/${phraseId}/edit`}>
+                {/* Conditionally render action buttons only for the owner */}
+                {isOwner && (
+                    <div className="flex gap-2">
+                        <Link href={`/phrases/${phraseId}/edit`}>
+                            <button
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                                disabled={isLoading || !!loadError}
+                            >
+                                編集
+                            </button>
+                        </Link>
                         <button
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                            disabled={isLoading || !!loadError} // Disable if loading or error
+                            onClick={handleDelete}
+                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                            disabled={isDeleting || isLoading || !!loadError}
                         >
-                            編集
+                            {isDeleting ? '削除中...' : '削除'}
                         </button>
-                    </Link>
-                    <button
-                        onClick={handleDelete}
-                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-                        disabled={isDeleting || isLoading || !!loadError}
-                    >
-                        {isDeleting ? '削除中...' : '削除'}
-                    </button>
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Display Deletion Error */}
@@ -303,6 +326,31 @@ const PhraseDetailPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Section for Comments */}
+            <div className="mt-8 p-4 border rounded shadow-md bg-white">
+                <h2 className="text-xl font-semibold mb-4">コメント ({phraseData.comments.length})</h2>
+                {/* TODO: Add Comment Form */} 
+                <div className="space-y-4 mt-4">
+                    {phraseData.comments.length === 0 && (
+                        <p className="text-gray-500">まだコメントはありません。</p>
+                    )}
+                    {phraseData.comments.map(comment => (
+                        <div key={comment.id} className="p-3 border-b last:border-b-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                                {comment.user.image ? (
+                                    <img src={comment.user.image} alt={comment.user.name || 'User'} className="h-6 w-6 rounded-full" />
+                                ) : (
+                                    <span className="h-6 w-6 rounded-full bg-gray-300 inline-block"></span>
+                                )}
+                                <span className="font-medium text-sm">{comment.user.name || '匿名ユーザー'}</span>
+                                <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString('ja-JP')}</span>
+                            </div>
+                            <p className="text-gray-800 whitespace-pre-wrap">{comment.content}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
         </div>
     );
