@@ -1,5 +1,5 @@
-import { auth } from '@/auth';
-import prisma from '@/lib/prisma';
+// import { auth } from '@/auth';
+// import prisma from '@/lib/prisma';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
