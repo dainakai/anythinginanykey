@@ -14,6 +14,7 @@ export async function GET(
   request: NextRequest,
   context: RouteContext // Use context object
 ) {
+  await request.text(); // Explicitly await request stream
   const { params } = context; // Access params from context
   const { phraseId } = params; // Destructure here
 
