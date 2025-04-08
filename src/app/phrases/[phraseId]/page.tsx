@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
@@ -113,42 +113,44 @@ const PhraseDetailPage: React.FC = () => {
     const [forkError, setForkError] = useState<string | null>(null);
     const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
     const [deleteCommentError, setDeleteCommentError] = useState<string | null>(null);
+    const [updatingPhraseId, setUpdatingPhraseId] = useState<string | null>(null); // 公開状態更新中ID
+    const [publishError, setPublishError] = useState<string | null>(null); // 公開状態更新エラー
 
-    // --- Fetch phrase data --- (Runs once on mount)
-    useEffect(() => {
+    // --- Fetch phrase data --- (useCallbackでラップ)
+    const fetchPhrase = useCallback(async () => {
         if (!phraseId) {
             setLoadError('Invalid Phrase ID.');
             setIsLoading(false);
             return;
         }
-
-        const fetchPhrase = async () => {
-            setIsLoading(true);
-            setLoadError('');
-            setDeleteError(''); // Reset delete error on fetch
-            try {
-                const response = await fetch(`/api/phrases/${phraseId}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    if (response.status === 403 || response.status === 404) {
-                        throw new Error('フレーズが見つからないか、アクセス権がありません。');
-                    } else {
-                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                    }
+        setIsLoading(true);
+        setLoadError('');
+        setPublishError(null); // フェッチ時にエラーをリセット
+        setDeleteError('');
+        try {
+            const response = await fetch(`/api/phrases/${phraseId}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                if (response.status === 403 || response.status === 404) {
+                    throw new Error('フレーズが見つからないか、アクセス権がありません。');
+                } else {
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
-                const data: PhraseData = await response.json();
-                setPhraseData(data);
-
-            } catch (error) {
-                console.error('Error fetching phrase:', error);
-                setLoadError(`データの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-            } finally {
-                setIsLoading(false);
             }
-        };
+            const data: PhraseData = await response.json();
+            setPhraseData(data);
 
-        fetchPhrase();
+        } catch (error) {
+            console.error('Error fetching phrase:', error);
+            setLoadError(`データの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+            setIsLoading(false);
+        }
     }, [phraseId]);
+
+    useEffect(() => {
+        fetchPhrase();
+    }, [fetchPhrase]); // fetchPhrase の参照が変わったとき（つまり phraseId が変わったとき）に実行
 
     // --- Error handling for the renderer ---
     const handleRenderError = (error: Error | null) => {
@@ -363,6 +365,46 @@ const PhraseDetailPage: React.FC = () => {
         }
     };
 
+    // --- Handle Publish Toggle --- (ダッシュボードから移植)
+    const handlePublishToggle = async (currentIsPublic: boolean) => {
+        if (!phraseId || !phraseData || updatingPhraseId) return; // phraseData をチェック
+
+        setUpdatingPhraseId(phraseId); // Use phraseId as the indicator
+        setPublishError(null); // Clear previous errors
+
+        const newIsPublic = !currentIsPublic;
+
+        try {
+            const response = await fetch(`/api/phrases/${phraseId}/publish`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ isPublic: newIsPublic }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            // Update the local state to reflect the change immediately
+            setPhraseData(prevData =>
+                prevData ? { ...prevData, isPublic: newIsPublic } : null
+            );
+
+        } catch (e: unknown) {
+            console.error('Failed to update phrase publish status:', e);
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            setPublishError(`公開状態の更新に失敗しました: ${errorMessage}`);
+            // Revert UI optimistically if needed, or refetch data
+            // Consider refetching on error: fetchPhrase();
+        } finally {
+            setUpdatingPhraseId(null); // Clear loading state
+        }
+    };
+    // ----------------------------- 
+
     // Determine if the current user is the owner
     const isOwner = !!session && !!phraseData && phraseData.user?.id === loggedInUserId;
 
@@ -426,13 +468,15 @@ const PhraseDetailPage: React.FC = () => {
                         </button>
                     )}
                     {/* -------------------------------------------------------- */}
-                    {/* --- Edit/Delete Buttons (Owner only) --- */}
+                    {/* --- Owner Buttons (Edit, Delete, Publish) --- */}
                     {isOwner && (
-                        <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap ml-auto"> {/* ml-auto を追加して右寄せに */}
+                             {/* Edit Button */} 
                             <Link href={`/phrases/${phraseId}/edit`} className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded text-xs sm:text-sm text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50">
                                 <PencilIcon className="h-4 w-4 mr-1" />
                                 <span>編集</span>
                             </Link>
+                            {/* Delete Button */}
                             <button
                                 onClick={handleDelete}
                                 className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 border border-red-300 rounded text-xs sm:text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
@@ -442,10 +486,31 @@ const PhraseDetailPage: React.FC = () => {
                                 <TrashIcon className="h-4 w-4 mr-1" />
                                 <span>{isDeleting ? '削除中...' : '削除'}</span>
                             </button>
+                             {/* Publish Toggle Checkbox (最後に移動) */} 
+                             <div className="flex items-center space-x-2 py-1 sm:py-1.5 border-l pl-2 sm:pl-3 ml-2 sm:ml-3"> {/* 区切り線とマージンを追加 */}
+                               <input
+                                 type="checkbox"
+                                 id={`publish-checkbox-${phraseId}`}
+                                 checked={phraseData.isPublic}
+                                 onChange={() => handlePublishToggle(phraseData.isPublic)}
+                                 disabled={!!updatingPhraseId} // Disable while updating
+                                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                               />
+                               <label htmlFor={`publish-checkbox-${phraseId}`} className={`text-sm ${updatingPhraseId ? 'text-gray-400' : 'text-gray-600'}`}>
+                                 {updatingPhraseId ? '更新中...' : (phraseData.isPublic ? '公開中' : '非公開')}
+                               </label>
+                             </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Display Publish Error */}
+            {publishError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
+                    {publishError}
+                </div>
+            )}
 
             {/* Display Deletion Error */}
             {deleteError && (
@@ -534,6 +599,10 @@ const PhraseDetailPage: React.FC = () => {
                     <div className="col-span-1">
                         <dt className="font-medium text-gray-600">最終更新日時:</dt>
                         <dd className="text-gray-800">{formattedUpdatedAt}</dd>
+                    </div>
+                    <div className="col-span-1">
+                        <dt className="font-medium text-gray-600">公開状態:</dt>
+                        <dd className="text-gray-800">{phraseData.isPublic ? '公開' : '非公開'}</dd>
                     </div>
                 </dl>
             </div>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import AuthButton from '@/components/AuthButton';
 // Updated import path for heroicons v2.x
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
   const { data: session } = useSession();
@@ -36,11 +36,21 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
+          {session && (
+            <Link href="/settings" className="text-gray-400 hover:text-white ml-4" title="設定">
+              <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
+            </Link>
+          )}
           <AuthButton />
         </nav>
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center">
+          {session && (
+             <Link href="/settings" className="text-gray-400 hover:text-white mr-2" title="設定">
+               <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
+             </Link>
+           )}
            {session && (
              <button
                 onClick={toggleMobileMenu}
@@ -75,6 +85,13 @@ const Header = () => {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href="/settings"
+                className="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
+              >
+                設定
+              </Link>
             </div>
             {/* Auth Button inside mobile menu if user is logged in */}
             <div className="pt-4 pb-3 border-t border-gray-700 px-5">

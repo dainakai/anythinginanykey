@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client';
 import PaginationControls from '@/components/PaginationControls';
-import { useSession } from 'next-auth/react';
 // Assuming shadcn/ui is installed - import Switch
 // import { Switch } from "@/components/ui/switch";
 // import { Label } from "@/components/ui/label";
@@ -40,7 +39,6 @@ const UNTAGGED_FILTER_VALUE = '__untagged__';
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
 
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -48,9 +46,6 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingPhraseId, setUpdatingPhraseId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState<string>('');
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState<boolean>(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const currentTag = searchParams.get('tag') || '';
@@ -88,12 +83,6 @@ function DashboardContent() {
   useEffect(() => {
     fetchPhrases(currentPage, currentTag, currentSort);
   }, [currentPage, currentTag, currentSort, fetchPhrases]);
-
-  useEffect(() => {
-    if (session?.user?.name) {
-      setEditingName(session.user.name);
-    }
-  }, [session]);
 
   const updateSearchParams = (newParams: Record<string, string>) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
@@ -173,42 +162,6 @@ function DashboardContent() {
     }
   };
 
-  // --- Handle Profile Update ---
-  const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editingName.trim() || isUpdatingProfile) return;
-
-    setIsUpdatingProfile(true);
-    setProfileError(null);
-
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: editingName.trim() }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const _updatedUser = await response.json();
-      alert('プロフィール名を更新しました！');
-      // TODO: Update session data locally if possible/needed, or trigger session refetch
-      // For now, rely on next page load or manual refresh for session update
-      // A simple approach: force reload or re-fetch phrases if name impacts display
-
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setProfileError(`プロフィールの更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
-
   // The actual JSX structure
   return (
     <div className="container mx-auto px-4 py-8">
@@ -227,38 +180,6 @@ function DashboardContent() {
               </Link>
           </div>
       </div>
-
-      {/* --- Profile Edit Form --- */}
-      {session && (
-         <div className="mb-8 p-4 border rounded shadow-md bg-gray-50">
-                <h2 className="text-xl font-semibold mb-4">プロフィール設定</h2>
-                 <form onSubmit={handleProfileUpdate}>
-                    <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 mb-1">
-                        表示名
-                    </label>
-                    <div className="flex items-center gap-2">
-                         <input
-                            type="text"
-                            id="profile-name"
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            required
-                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-auto sm:text-sm border border-gray-300 rounded-md p-2"
-                            disabled={isUpdatingProfile}
-                        />
-                        <button
-                            type="submit"
-                            disabled={isUpdatingProfile || !editingName.trim() || editingName.trim() === session.user?.name}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                        >
-                            {isUpdatingProfile ? '保存中...' : '保存'}
-                        </button>
-                    </div>
-                     {profileError && <p className="text-red-500 text-sm mt-1">{profileError}</p>}
-                </form>
-            </div>
-      )}
-      {/* ----------------------- */}
 
       {/* Filter and Sort Controls - Adjusted for responsiveness */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 items-start sm:items-center">

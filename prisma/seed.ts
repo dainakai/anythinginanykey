@@ -6,7 +6,14 @@ const prisma = new PrismaClient();
 const presetTags = [
   'Major 2-5-1',
   'Minor 2-5-1',
-  'Dominant 7th',
+  'Dominant 7th (Mixolydian)',
+  'Tonic Major',
+  'Tonic Minor',
+  'Major 6',
+  'Minor 6',
+  'Minor 7',
+  'Major 7',
+  'Lydian',
   'Altered Scale',
   'Diminished',
   'Blues Scale',
@@ -14,6 +21,22 @@ const presetTags = [
   'Pentatonic',
   'Modal Interchange',
   'Rhythm Changes',
+  'Major Scale',
+  'Minor Scale',
+  'Dorian',
+  'Phrygian',
+  'Harmonic Minor',
+  'Locrian',
+  'Super Locrian',
+  'Whole Tone',
+  'Major Pentatonic',
+  'Minor Pentatonic',
+  'Major Blues',
+  'Minor Blues',
+  'Tritone Substitution',
+  'Rhythm Patterns',
+  'Chromatic',
+  'Augmented'
   // Add more preset tags as needed
 ];
 

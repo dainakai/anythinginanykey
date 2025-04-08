@@ -13,7 +13,7 @@ export default function AuthButton() {
   if (session) {
     return (
       <button
-        onClick={() => signOut()}
+        onClick={() => signOut({ callbackUrl: '/' })}
         className={`${commonButtonStyles} ${signOutStyles}`}
       >
         Sign out
