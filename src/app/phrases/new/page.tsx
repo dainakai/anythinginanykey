@@ -84,18 +84,18 @@ export default function NewPhrasePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">新しいフレーズを作成</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6">新しいフレーズを作成</h1>
       {error && <p className="text-red-500 bg-red-100 p-3 rounded mb-4">エラー: {error}</p>}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left Column: Editor and Metadata */}
-        <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        {/* Left Column: Editor and Metadata - Order adjusted for mobile */}
+        <div className="space-y-4 order-2 lg:order-1">
           <div>
             <label htmlFor="abcNotation" className="block text-sm font-medium text-gray-700 mb-1">
               ABC Notation
             </label>
             <textarea
               id="abcNotation"
-              rows={15}
+              rows={12}
               value={abcNotation}
               onChange={(e) => setAbcNotation(e.target.value)}
               required
@@ -159,10 +159,10 @@ export default function NewPhrasePage() {
            </div>
         </div>
 
-        {/* Right Column: Real-time Preview */}
-        <div className="space-y-4">
+        {/* Right Column: Real-time Preview - Order adjusted for mobile */}
+        <div className="space-y-4 order-1 lg:order-2">
             <h2 className="text-lg font-medium text-gray-900">プレビュー</h2>
-            <div className="p-4 border rounded-md bg-white min-h-[200px]">
+            <div className="p-4 border rounded-md bg-white min-h-[150px] md:min-h-[200px]">
                 {!previewError && abcNotation ? (
                     <AbcNotationRenderer
                         key={abcNotation} // Re-render when abcNotation changes
