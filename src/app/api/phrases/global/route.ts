@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getUserProfiles } from '@/lib/userProfile';
 
+export const runtime = 'edge';
+
 const DEFAULT_PAGE_LIMIT = 9;
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 

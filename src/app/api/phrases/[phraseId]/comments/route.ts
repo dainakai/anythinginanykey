@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { createClient } from '@/utils/supabase/server';
 import { getUserProfile } from '@/lib/userProfile';
+import { cookies } from 'next/headers';
+
+export const runtime = 'edge';
 
 // Define context type with Promise for params
 interface RouteContext {

@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { saveUserProfile } from '@/lib/userProfile';
+import { cookies } from 'next/headers';
+
+export const runtime = 'edge';
 
 // ユーザーがログインした後にプロファイル情報を自動更新するためのAPIルート
 export async function GET() {
   try {
     // サーバーサイドでSupabaseクライアントを作成
-    const supabase = await createClient();
+    const supabase = await createClient(cookies());
     
     // 現在のユーザー情報を取得
     const { data: { user } } = await supabase.auth.getUser();

@@ -4,6 +4,9 @@ import { Prisma } from '@prisma/client';
 import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
 import { createClient } from '@/utils/supabase/server';
 import { getUserProfiles } from '@/lib/userProfile';
+import { cookies } from 'next/headers';
+
+export const runtime = 'edge';
 
 // Define context type with Promise for params
 interface RouteContext {

@@ -1,13 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getMyPhrases } from '@/lib/phrase';
+import { cookies } from 'next/headers';
 
+export const runtime = 'edge';
 
 const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
