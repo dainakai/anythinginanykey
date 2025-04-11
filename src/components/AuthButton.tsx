@@ -13,7 +13,7 @@ interface AuthButtonProps {
 export default function AuthButton({ user: propUser }: AuthButtonProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(propUser ?? null);
-  const [loading, setLoading] = useState(!propUser);
+  const [_loading, setLoading] = useState(!propUser); // renamed to _loading to avoid linting error
   const supabase = createClient();
   
   // If user not provided via props, fetch from Supabase
