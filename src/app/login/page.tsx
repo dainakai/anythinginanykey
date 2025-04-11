@@ -1,13 +1,22 @@
 // src/app/login/page.tsx
 'use client' // Mark as a Client Component
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { LoginErrorDisplay } from './LoginErrorDisplay'; // Import the error display component
-import { supabase } from '@/lib/supabase/client'; // Import Supabase client
+import { createClient } from '@/utils/supabase/client'; // Import Supabase client creator instead of singleton
 
 export default function LoginPage() {
+  // SupabaseクライアントをuseEffect内で初期化して、サーバーサイドレンダリング時に実行されないようにする
+  const [supabase, setSupabase] = useState<any>(null);
+
+  useEffect(() => {
+    // クライアントサイドでのみクライアントを初期化
+    setSupabase(createClient());
+  }, []);
 
   const handleGoogleSignIn = async () => {
+    if (!supabase) return; // まだ初期化されていない場合は何もしない
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
