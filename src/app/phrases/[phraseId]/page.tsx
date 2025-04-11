@@ -9,7 +9,7 @@ import Image from 'next/image'; // Import next/image
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/utils/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import type { Database } from '@/types/supabase'; // Use path alias
+// Use path alias
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.

@@ -16,7 +16,7 @@ export const createSupabaseServerClient = async () => {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
+          } catch (_error) {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing user sessions.
           }
@@ -24,7 +24,7 @@ export const createSupabaseServerClient = async () => {
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
+          } catch (_error) {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing user sessions.
           }
@@ -48,14 +48,14 @@ export const createSupabaseRouteHandlerClient = async () => {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
+          } catch (_error) {
             // Error handling for Route Handlers (less likely to be called from here)
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
+          } catch (_error) {
             // Error handling for Route Handlers
           }
         },

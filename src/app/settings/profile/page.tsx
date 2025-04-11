@@ -3,9 +3,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export default function ProfileSettingsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [editingName, setEditingName] = useState<string>('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState<boolean>(false);

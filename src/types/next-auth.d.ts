@@ -1,6 +1,6 @@
-// types/next-auth.d.ts
-import NextAuth, { DefaultSession, DefaultUser } from "next-auth";
-import { JWT, DefaultJWT } from "next-auth/jwt";
+// Legacy next-auth.d.ts type definitions - kept for reference
+import { DefaultSession, DefaultUser } from "next-auth";
+import { DefaultJWT } from "next-auth/jwt";
 
 declare module "next-auth" {
   /**
@@ -14,7 +14,7 @@ declare module "next-auth" {
   }
 
   /** The OAuth profile returned from your provider */
-  interface User extends DefaultUser {
+  interface User extends Record<string, unknown>, DefaultUser {
     // Add any custom properties for your User model here if needed in the future
   }
 }

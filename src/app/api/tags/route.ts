@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma, Tag } from '@prisma/client'; // Import Tag type
 import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
+
 
 // GET /api/tags - Fetch available tags for the user and preset tags
 export async function GET(_request: Request) {

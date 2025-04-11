@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+
 import { createClient } from '@/utils/supabase/server';
 import { saveUserProfile } from '@/lib/userProfile';
 

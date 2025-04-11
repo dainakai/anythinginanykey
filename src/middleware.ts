@@ -19,10 +19,10 @@ export async function middleware(request: NextRequest) {
         },
         // updateSession後のミドルウェアではクッキーを直接設定する必要はないが、
         // 他のロジックのためにスタブを残しています
-        set(name: string, value: string, options) {
+        set(_name: string, _value: string, _options) {
           // updateSession後のチェックでは無視されます
         },
-        remove(name: string, options) {
+        remove(_name: string, _options) {
           // updateSession後のチェックでは無視されます
         },
       },

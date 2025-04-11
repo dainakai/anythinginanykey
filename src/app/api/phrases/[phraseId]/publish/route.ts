@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import type { Database } from '@/types/supabase';
+
 import { createClient } from '@/utils/supabase/server';
 
 // Define context type with Promise for params

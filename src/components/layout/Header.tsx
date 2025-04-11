@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AuthButton from '@/components/AuthButton';
-import { Bars3Icon, XMarkIcon, Cog6ToothIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import {
   NavigationMenu,
   NavigationMenuContent,
