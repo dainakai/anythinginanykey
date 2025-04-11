@@ -1,6 +1,6 @@
 // 'use client'; // サーバーコンポーネントに戻す
 
-// export const runtime = 'edge'; // サーバーコンポーネントに戻すため削除
+export const runtime = 'edge'; // 再度 Edge Runtime を指定
 
 import React from 'react';
 import InteractiveAbcEditor from '@/components/Help/InteractiveAbcEditor';
