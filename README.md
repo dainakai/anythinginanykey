@@ -101,8 +101,8 @@ npx prisma migrate dev
 
 1. Cloudflare Dashboardでプロジェクトを作成
 2. ビルド設定:
-   - ビルドコマンド: `npm run build`（`--no-engine`フラグ付きでPrisma生成）
-   - ビルド出力ディレクトリ: `.next`
+   - ビルドコマンド: `npm run build:cloudflare`
+   - ビルド出力ディレクトリ: `.vercel/output/static` (next-on-pagesのデフォルト出力先)
    - Node.jsバージョン: 20.x以上
 
 3. 環境変数の設定:
