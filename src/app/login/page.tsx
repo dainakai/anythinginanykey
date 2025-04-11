@@ -4,10 +4,12 @@
 import { Suspense, useEffect, useState } from 'react';
 import { LoginErrorDisplay } from './LoginErrorDisplay'; // Import the error display component
 import { createClient } from '@/utils/supabase/client'; // Import Supabase client creator instead of singleton
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 
 export default function LoginPage() {
   // SupabaseクライアントをuseEffect内で初期化して、サーバーサイドレンダリング時に実行されないようにする
-  const [supabase, setSupabase] = useState<any>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
 
   useEffect(() => {
     // クライアントサイドでのみクライアントを初期化
