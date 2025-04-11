@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-
+// import { cookies } from 'next/headers'; // 未使用のため削除
 import { createClient } from '@/utils/supabase/server';
 import { saveUserProfile } from '@/lib/userProfile';
+
+export const runtime = 'edge';
 
 // Update user profile (currently only name)
 export async function PATCH(request: NextRequest) {

@@ -54,8 +54,81 @@ npx prisma migrate dev
 
 - **Edge RuntimeとPrisma**: Next.jsのミドルウェア、Edge API Routes、Edge Functionsなどの環境では、標準のPrisma Clientは動作しません。これらの環境でデータベースアクセスが必要な場合は、以下のいずれかを検討してください：
   - API Routesを使用してデータベース操作を行う
-  - Prisma Accelerateを使用する（有料）
-  - Prisma Driver Adaptersを使用する
+  - Prisma Accelerateを使用する（本プロジェクトではCloudflareデプロイのためこの方法を採用）
+
+## Cloudflareへのデプロイ
+
+このプロジェクトはCloudflare Pagesへのデプロイに対応しています。
+
+### 事前準備
+
+1. Cloudflareアカウントを作成し、Cloudflare Pagesを有効化
+2. GitリポジトリをCloudflareと連携
+3. **Prisma Accelerateのセットアップ**
+   - Prisma Data Platformのアカウント作成: https://cloud.prisma.io
+   - 新しいプロジェクトを作成
+   - Prisma Accelerate設定を取得（接続文字列）
+
+### Prisma Accelerateの設定
+
+1. プロジェクトで`@prisma/extension-accelerate`を使用:
+   ```bash
+   npm install @prisma/extension-accelerate
+   ```
+
+2. Prismaクライアントを`--no-engine`フラグで生成:
+   ```bash
+   npx prisma generate --no-engine
+   ```
+
+3. Prismaクライアントの初期化方法:
+   ```typescript
+   import { PrismaClient } from '@prisma/client/edge'
+   import { withAccelerate } from '@prisma/extension-accelerate'
+
+   const prisma = new PrismaClient().$extends(withAccelerate())
+   ```
+
+4. クエリでキャッシュを活用（オプション）:
+   ```typescript
+   await prisma.userProfile.findMany({
+     where: { /* 条件 */ },
+     cacheStrategy: { ttl: 60 }, // 60秒間キャッシュ
+   });
+   ```
+
+### デプロイ手順
+
+1. Cloudflare Dashboardでプロジェクトを作成
+2. ビルド設定:
+   - ビルドコマンド: `npm run build:cloudflare`
+   - ビルド出力ディレクトリ: `.vercel/output/static` (next-on-pagesのデフォルト出力先)
+   - Node.jsバージョン: 20.x以上
+
+3. 環境変数の設定:
+   以下の環境変数をCloudflare Pagesのプロジェクト設定で追加:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=<SupabaseのURL>
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<SupabaseのAnonymousキー>
+   DATABASE_URL=<Prisma Accelerate接続文字列>
+   DIRECT_URL=<Supabase Postgres直接接続文字列>
+   NODE_ENV=production
+   ```
+
+   **注**: DATABASE_URLはPrisma Accelerateの接続文字列を使用します（`prisma://<project-id>...`の形式）
+
+4. "保存してデプロイ"をクリック
+
+### Supabaseの設定
+
+1. Supabaseプロジェクトで認証リダイレクトURLを設定:
+   - Supabaseダッシュボード > Authentication > URL Configuration
+   - Site URL: `https://<あなたのCloudflareサブドメイン>.pages.dev`
+   - Redirect URLs: `https://<あなたのCloudflareサブドメイン>.pages.dev/api/auth/callback`
+
+2. データベース接続文字列:
+   - DIRECT_URL: Supabase PostgreSQLへの直接接続文字列（Prisma Accelerateのフォールバック用）
+     例: `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`
 
 ## 開発ガイドライン
 

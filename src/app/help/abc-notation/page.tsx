@@ -1,3 +1,7 @@
+// 'use client'; // サーバーコンポーネントに戻す
+
+export const runtime = 'edge'; // 再度 Edge Runtime を指定
+
 import React from 'react';
 import InteractiveAbcEditor from '@/components/Help/InteractiveAbcEditor';
 // We might still want the markdown guide for detailed explanations

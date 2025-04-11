@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { saveUserProfile } from '@/lib/userProfile';
 
+export const runtime = 'edge';
+
 // ユーザーがログインした後にプロファイル情報を自動更新するためのAPIルート
 export async function GET() {
   try {

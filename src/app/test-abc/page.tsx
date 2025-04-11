@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import React, { useState, useEffect } from 'react';
 // import AbcNotationRenderer from '@/components/AbcNotationRenderer'; // Direct import removed
 import { parseAbcNotation, AbcHeader } from '@/lib/abcParser';

@@ -1,6 +1,8 @@
 // src/app/login/page.tsx
 'use client' // Mark as a Client Component
 
+export const runtime = 'edge'; // Add Edge Runtime specifier
+
 import { Suspense, useEffect, useState } from 'react';
 import { LoginErrorDisplay } from './LoginErrorDisplay'; // Import the error display component
 import { createClient } from '@/utils/supabase/client'; // Import Supabase client creator instead of singleton

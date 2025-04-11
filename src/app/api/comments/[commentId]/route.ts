@@ -3,6 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
+export const runtime = 'edge';
+
 // Define context type with Promise for params
 interface RouteContext {
   params: Promise<{ commentId: string }>; // Params is now a Promise

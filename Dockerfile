@@ -14,12 +14,15 @@ ENV NODE_ENV=development
 # Install dependencies including devDependencies
 RUN npm cache clean --force && npm install --legacy-peer-deps
 
+# Prisma Accelerate対応のための追加パッケージをインストール
+RUN npm install @prisma/extension-accelerate@0.6.3 --save-exact
+
 # Copy prisma schema
 COPY prisma ./prisma/
 # Force cache invalidation for generate step by re-copying schema
 COPY prisma/schema.prisma ./prisma/schema.prisma
-# Generate prisma client (uses installed node_modules)
-RUN npx prisma generate
+# Generate prisma client with --no-engine flag for Accelerate
+RUN npx prisma generate --no-engine
 
 # Copy the rest of the application code
 COPY . .

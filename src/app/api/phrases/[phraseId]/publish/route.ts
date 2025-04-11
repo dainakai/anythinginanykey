@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-
+// import { cookies } from 'next/headers'; // 未使用のため削除
 import { createClient } from '@/utils/supabase/server';
+// import { publishPhrase } from '@/lib/phrase'; // 未使用のため削除
+
+export const runtime = 'edge';
 
 // Define context type with Promise for params
 interface RouteContext {
