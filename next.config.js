@@ -12,7 +12,12 @@ const nextConfig = {
              // Add other allowed domains here if needed in the future
         ],
     },
-    // Add other Next.js configurations here if needed
+    // Cloudflare Pages向けの設定
+    experimental: {
+        // 全てのサーバーサイドルーティングでEdge Runtimeを使用
+        runtime: 'experimental-edge',
+    },
+    // Cloudflare Pagesでのビルド時の設定
     webpack: (config, { isServer }) => {
       // polling を有効にする (開発環境のみ)
       if (!isServer && process.env.NODE_ENV === 'development') {
@@ -21,6 +26,12 @@ const nextConfig = {
           aggregateTimeout: 300, // 変更をまとめて処理するまでの待機時間
         };
       }
+
+      // Edge Runtimeで動作する場合はいくつかのNodeモジュールをハンドリング
+      if (isServer) {
+        config.externals.push('@neondatabase/serverless', 'pg');
+      }
+      
       return config;
     },
 };

@@ -54,8 +54,49 @@ npx prisma migrate dev
 
 - **Edge RuntimeとPrisma**: Next.jsのミドルウェア、Edge API Routes、Edge Functionsなどの環境では、標準のPrisma Clientは動作しません。これらの環境でデータベースアクセスが必要な場合は、以下のいずれかを検討してください：
   - API Routesを使用してデータベース操作を行う
-  - Prisma Accelerateを使用する（有料）
-  - Prisma Driver Adaptersを使用する
+  - Prisma Driver Adaptersを使用する（本プロジェクトではCloudflareデプロイのためこの方法を採用）
+
+## Cloudflareへのデプロイ
+
+このプロジェクトはCloudflare Pagesへのデプロイに対応しています。
+
+### 事前準備
+
+1. Cloudflareアカウントを作成し、Cloudflare Pagesを有効化
+2. GitリポジトリをCloudflareと連携
+
+### デプロイ手順
+
+1. Cloudflare Dashboardでプロジェクトを作成
+2. ビルド設定:
+   - ビルドコマンド: `npm run build`
+   - ビルド出力ディレクトリ: `.next`
+   - Node.jsバージョン: 20.x以上
+
+3. 環境変数の設定:
+   以下の環境変数をCloudflare Pagesのプロジェクト設定で追加:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=<SupabaseのURL>
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<SupabaseのAnonymousキー>
+   DATABASE_URL=<Supabase Postgres接続文字列>
+   DIRECT_URL=<Supabase Postgres直接接続文字列>
+   NODE_ENV=production
+   ```
+
+4. "保存してデプロイ"をクリック
+
+### Supabaseの設定
+
+1. Supabaseプロジェクトで認証リダイレクトURLを設定:
+   - Supabaseダッシュボード > Authentication > URL Configuration
+   - Site URL: `https://<あなたのCloudflareサブドメイン>.pages.dev`
+   - Redirect URLs: `https://<あなたのCloudflareサブドメイン>.pages.dev/api/auth/callback`
+
+2. データベース接続文字列については以下のフォーマットを使用:
+   - DATABASE_URL: `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`
+   - DIRECT_URL: `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`
+
+   注: Prisma接続プールはポート6543を使用し、直接接続はポート5432を使用します
 
 ## 開発ガイドライン
 
