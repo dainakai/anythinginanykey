@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate --no-engine && next build",
     "start": "next start -p $PORT",
     "lint": "next lint",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "prisma generate --no-engine",
     "prisma:studio": "prisma studio",
     "seed:compile": "tsc -p prisma/tsconfig.seed.json",
     "seed:run": "docker-compose exec -T web node -r dotenv/config prisma/dist/seed.js",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "^5.10.2",
+    "@prisma/extension-accelerate": "^0.6.0",
     "@radix-ui/react-navigation-menu": "^1.2.5",
     "@radix-ui/react-slot": "^1.1.2",
     "@supabase/ssr": "^0.6.1",

@@ -69,11 +69,39 @@ npx prisma migrate dev
    - 新しいプロジェクトを作成
    - Prisma Accelerate設定を取得（接続文字列）
 
+### Prisma Accelerateの設定
+
+1. プロジェクトで`@prisma/extension-accelerate`を使用:
+   ```bash
+   npm install @prisma/extension-accelerate
+   ```
+
+2. Prismaクライアントを`--no-engine`フラグで生成:
+   ```bash
+   npx prisma generate --no-engine
+   ```
+
+3. Prismaクライアントの初期化方法:
+   ```typescript
+   import { PrismaClient } from '@prisma/client/edge'
+   import { withAccelerate } from '@prisma/extension-accelerate'
+
+   const prisma = new PrismaClient().$extends(withAccelerate())
+   ```
+
+4. クエリでキャッシュを活用（オプション）:
+   ```typescript
+   await prisma.userProfile.findMany({
+     where: { /* 条件 */ },
+     cacheStrategy: { ttl: 60 }, // 60秒間キャッシュ
+   });
+   ```
+
 ### デプロイ手順
 
 1. Cloudflare Dashboardでプロジェクトを作成
 2. ビルド設定:
-   - ビルドコマンド: `npm run build`
+   - ビルドコマンド: `npm run build`（`--no-engine`フラグ付きでPrisma生成）
    - ビルド出力ディレクトリ: `.next`
    - Node.jsバージョン: 20.x以上
 
