@@ -9,26 +9,26 @@
 - タグによるフレーズの分類・検索
 - ユーザー定義タグの管理 (追加・削除)
 - プリセットタグの提供
-- Googleアカウントによる認証
+- Googleアカウントによる認証 (Supabase Auth 経由)
 
 ## 技術スタック
 
 - **フレームワーク:** Next.js (App Router)
 - **言語:** TypeScript
-- **データベース:** PostgreSQL
+- **データベース:** PostgreSQL (ローカル開発時は Docker, 本番は Supabase DB)
 - **ORM:** Prisma
-- **認証:** NextAuth.js (Auth.js v5)
+- **認証:** Supabase Auth (@supabase/supabase-js, @supabase/auth-helpers-nextjs)
 - **UI:** Tailwind CSS
 - **楽譜描画:** abcjs
-- **コンテナ:** Docker, Docker Compose
+- **コンテナ:** Docker, Docker Compose (ローカル開発環境)
 
 ## 開発環境セットアップ
 
 ### 必要なもの
 
 - Node.js (v20推奨)
-- Docker Desktop
-- Google Cloud Platformアカウント (OAuth認証情報用)
+- Docker Desktop (ローカル DB 利用時)
+- Supabase アカウント (認証、データベース用)
 
 ### 手順
 
@@ -44,38 +44,66 @@
     cp .env.example .env
     ```
     `.env` ファイルを開き、以下の項目を設定してください:
-    - `POSTGRES_PASSWORD`: 任意のパスワード (デフォルト: `password`)
-    - `GOOGLE_CLIENT_ID`: Google Cloud Console で取得したクライアントID
-    - `GOOGLE_CLIENT_SECRET`: Google Cloud Console で取得したクライアントシークレット
-    - `NEXTAUTH_SECRET`: 任意のランダムな文字列 (例: `openssl rand -hex 32` で生成)
-    - `NEXTAUTH_URL`: `http://localhost:3000` (ローカル開発環境の場合)
 
-3.  **Dockerコンテナのビルドと起動:**
+    **Supabase 関連:**
+    - `NEXT_PUBLIC_SUPABASE_URL`: あなたの Supabase プロジェクトの URL (Project Settings > API)
+    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: あなたの Supabase プロジェクトの `anon` public キー (Project Settings > API)
+    - `SUPABASE_SERVICE_ROLE_KEY`: (オプション) あなたの Supabase プロジェクトの `service_role` secret キー (Project Settings > API)。サーバーサイドで管理者権限が必要な場合に使用します。
+
+    **データベース接続:**
+    Supabase プロジェクトのデータベースを使用する場合:
+    - `DATABASE_URL`: Supabase データベースの接続文字列 (Project Settings > Database > Connection string > URI)。Prisma が直接データベースにアクセスするために使用します。
+    ローカルの Docker PostgreSQL コンテナを使用する場合 (デフォルト):
+    - `DATABASE_URL="postgresql://user:password@db:5432/mydatabase?schema=public"`
+    - `POSTGRES_PASSWORD`: 任意のパスワード (デフォルト: `password`)。上記 `DATABASE_URL` と合わせてください。
+
+3.  **依存関係のインストール:**
+    ```bash
+    npm install
+    ```
+
+4.  **Dockerコンテナの起動 (ローカル DB 利用時):**
+    ローカルの PostgreSQL データベースを使用する場合のみ実行します。
     ```bash
     docker-compose up --build -d
     ```
-    初回起動時にはデータベースのマイグレーションが自動的に実行されます。
 
-4.  **(初回のみ) プリセットタグの投入:**
+5.  **データベースマイグレーション:**
+    Supabase DB またはローカル DB に対してスキーマを適用します。
+    ```bash
+    # Supabase DB または localhost:5433 (docker-compose.yml 参照) に接続できる状態で実行
+    npx prisma migrate dev
+    ```
+    *注意:* マイグレーションを `web` コンテナ内で実行したい場合は `docker-compose exec web npx prisma migrate dev` を使用します。
+
+6.  **(初回のみ) プリセットタグの投入:**
     アプリケーションで共通利用するプリセットタグをデータベースに登録します。
     ```bash
     npm run seed
     ```
-    (このコマンドは Docker コンテナ内で Seed スクリプトを実行します)
+    (ローカル DB の場合、`docker-compose exec web npm run seed` でコンテナ内で実行します)
 
-5.  **アクセス:**
+7.  **開発サーバーの起動:**
+    ```bash
+    npm run dev
+    ```
+
+8.  **アクセス:**
     ブラウザで `http://localhost:3000` にアクセスします。
 
 ### 便利なコマンド
 
-- **コンテナの停止:** `docker-compose down`
-- **データベースのリセット:**
+- **コンテナの停止 (ローカル DB):** `docker-compose down`
+- **ローカル DB のリセット:**
   ```bash
   docker-compose down -v # ボリュームごと削除
   docker-compose up --build -d
-  npm run seed # プリセットタグ再投入
+  docker-compose exec web npx prisma migrate reset --force # スキーマ再適用
+  docker-compose exec web npm run seed # プリセットタグ再投入
   ```
 - **Prisma Studio (データベースGUI):**
+  Supabase DB の場合は Supabase Studio を使用します。
+  ローカル DB の場合:
   `docker-compose.yml` で `web` サービスのポート `5555` が公開されています。
   ```bash
   docker-compose exec web npx prisma studio

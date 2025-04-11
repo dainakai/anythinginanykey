@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { createSupabaseRouteHandlerClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { cookies } from 'next/headers';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -16,8 +17,11 @@ export async function PATCH(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Use Supabase client for authentication
+  const cookieStore = cookies();
+  const supabase = createSupabaseRouteHandlerClient({ cookies: () => cookieStore });
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -62,9 +66,7 @@ export async function PATCH(
     const updatedPhrase = await prisma.phrase.update({
       where: {
         id: phraseId,
-        // Optional: Add userId here as well for extra security,
-        // although we already checked ownership above.
-        // userId: userId
+        userId: userId // Ensuring ownership again
       },
       data: {
         isPublic: isPublic,
@@ -74,11 +76,9 @@ export async function PATCH(
     return NextResponse.json(updatedPhrase);
   } catch (error) {
     console.error('Error updating publish status:', error);
-    // Rename error to _error if unused
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         // Handle specific Prisma errors if needed
     }
-    // console.error('Error updating publish status:', _error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

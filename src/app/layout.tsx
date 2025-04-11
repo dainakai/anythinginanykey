@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+// import SessionProviderWrapper from "@/components/SessionProviderWrapper"; // Remove NextAuth provider
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -30,13 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
-        <SessionProviderWrapper>
-          <Header />
-          <main className="flex-grow container mx-auto px-4 py-8">
-            {children}
-          </main>
-          <Footer />
-        </SessionProviderWrapper>
+        {/* Remove SessionProviderWrapper */}
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-8">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );
