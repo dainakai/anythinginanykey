@@ -3,8 +3,9 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import type { User } from '@supabase/supabase-js'; // Import Supabase User type
+import type { User, SupabaseClient } from '@supabase/supabase-js'; // Import Supabase User and Client types
 import { useEffect, useState } from 'react';
+import type { Database } from '@/types/supabase';
 
 interface AuthButtonProps {
   user?: User | null; // Optional user prop, will fetch if not provided
@@ -14,7 +15,12 @@ export default function AuthButton({ user: propUser }: AuthButtonProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(propUser ?? null);
   const [_loading, setLoading] = useState(!propUser); // renamed to _loading to avoid linting error
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
+  
+  // Initialize Supabase client only on the client side
+  useEffect(() => {
+    setSupabase(createClient());
+  }, []);
   
   // If user not provided via props, fetch from Supabase
   useEffect(() => {
@@ -22,6 +28,8 @@ export default function AuthButton({ user: propUser }: AuthButtonProps) {
       setUser(propUser);
       return;
     }
+    
+    if (!supabase) return; // Skip if supabase client not initialized
     
     const fetchUser = async () => {
       setLoading(true);
@@ -47,6 +55,8 @@ export default function AuthButton({ user: propUser }: AuthButtonProps) {
   }, [propUser, supabase]);
 
   const handleSignIn = async () => {
+    if (!supabase) return;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -61,6 +71,8 @@ export default function AuthButton({ user: propUser }: AuthButtonProps) {
   };
 
   const handleSignOut = async () => {
+    if (!supabase) return;
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error.message);
