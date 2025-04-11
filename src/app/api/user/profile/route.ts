@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+// import { cookies } from 'next/headers'; // 未使用のため削除
 import { createClient } from '@/utils/supabase/server';
 import { saveUserProfile } from '@/lib/userProfile';
 

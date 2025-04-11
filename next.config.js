@@ -15,7 +15,7 @@ const nextConfig = {
     // Cloudflare Pages向けの設定
     experimental: {
         // 全てのサーバーサイドルーティングでEdge Runtimeを使用
-        runtime: 'experimental-edge',
+        // runtime: 'experimental-edge', // 削除: ルートごとに指定するため不要
     },
     // Cloudflare Pagesでのビルド時の設定
     webpack: (config, { isServer }) => {

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { saveUserProfile } from '@/lib/userProfile';
-import { cookies } from 'next/headers';
 
 export const runtime = 'edge';
 
@@ -9,7 +8,7 @@ export const runtime = 'edge';
 export async function GET() {
   try {
     // サーバーサイドでSupabaseクライアントを作成
-    const supabase = await createClient(cookies());
+    const supabase = await createClient();
     
     // 現在のユーザー情報を取得
     const { data: { user } } = await supabase.auth.getUser();

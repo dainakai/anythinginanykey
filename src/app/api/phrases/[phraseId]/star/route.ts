@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
+// import { cookies } from 'next/headers'; // 未使用のため削除
 // import { starPhrase, unstarPhrase } from '@/lib/star'; // Removed as logic is inline now
 
 export const runtime = 'edge';
