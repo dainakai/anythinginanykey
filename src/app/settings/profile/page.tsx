@@ -1,7 +1,9 @@
 // src/app/settings/profile/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+export const runtime = 'edge';
+
+import React, { useState, useEffect /*, Suspense*/ } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import type { User } from '@supabase/supabase-js';
 

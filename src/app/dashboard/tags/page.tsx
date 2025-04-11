@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Tag } from '@prisma/client';
 import Link from 'next/link';

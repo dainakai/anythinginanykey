@@ -1,6 +1,8 @@
 'use client';
 
-import React from 'react';
+export const runtime = 'edge';
+
+import React /*, { useState }*/ from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; // Remove CardDescription import
 import { Button } from "@/components/ui/button";

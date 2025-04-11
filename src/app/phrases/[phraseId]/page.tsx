@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge'; // Add Edge Runtime specifier
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';

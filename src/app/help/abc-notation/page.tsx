@@ -1,3 +1,7 @@
+// 'use client'; // サーバーコンポーネントに戻す
+
+// export const runtime = 'edge'; // サーバーコンポーネントに戻すため削除
+
 import React from 'react';
 import InteractiveAbcEditor from '@/components/Help/InteractiveAbcEditor';
 // We might still want the markdown guide for detailed explanations
