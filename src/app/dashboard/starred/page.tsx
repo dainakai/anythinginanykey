@@ -8,7 +8,7 @@ import { Tag } from '@prisma/client';
 import PaginationControls from '@/components/PaginationControls';
 import { createClient } from '@/utils/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import Image from 'next/image';
+
 
 // Interface for starred phrases (similar to GlobalPhrase, but userHasStarred is implicitly true)
 interface StarredPhrase {
