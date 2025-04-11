@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { parseAbcNotation } from '@/lib/abcParser'; // Import the parser
+import { createClient } from '@/utils/supabase/server';
+import { getUserProfiles } from '@/lib/userProfile';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -18,8 +19,10 @@ export async function GET(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id; // Get user ID if logged in
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id; // Get user ID if logged in
 
   if (!phraseId) {
     return NextResponse.json({ error: 'Phrase ID is required' }, { status: 400 });
@@ -32,27 +35,10 @@ export async function GET(
       },
       include: {
         tags: true,
-        user: { // Author info
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          }
-        },
         comments: { // Include comments
           orderBy: { createdAt: 'asc' }, // Oldest first
-          include: {
-            user: { // Comment author info
-              select: {
-                id: true,
-                name: true,
-                image: true,
-              }
-            }
-          }
         },
-        // Include star count (already in model), maybe also if the current user starred it?
-        // stars: userId ? { where: { userId: userId }, select: { userId: true } } : false
+        // Include star count (already in model)
       },
     });
 
@@ -64,6 +50,36 @@ export async function GET(
     if (!phrase.isPublic && phrase.userId !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    // ユーザープロファイル情報を取得
+    // フレーズ作成者とコメント投稿者のIDを収集
+    const userIdsToFetch = [phrase.userId];
+    phrase.comments.forEach(comment => {
+      if (!userIdsToFetch.includes(comment.userId)) {
+        userIdsToFetch.push(comment.userId);
+      }
+    });
+    
+    // ユーザープロファイル情報を取得
+    const userProfiles = await getUserProfiles(userIdsToFetch);
+    
+    // 取得したプロファイル情報を使用してフレーズデータを整形
+    const processedPhrase = {
+      ...phrase,
+      user: {
+        id: phrase.userId,
+        name: userProfiles[phrase.userId]?.name || `ユーザー ${phrase.userId.substring(0, 6)}`,
+        image: null
+      },
+      comments: phrase.comments.map(comment => ({
+        ...comment,
+        user: {
+          id: comment.userId,
+          name: userProfiles[comment.userId]?.name || `ユーザー ${comment.userId.substring(0, 6)}`,
+          image: null
+        }
+      }))
+    };
 
     // Add a field to indicate if the current logged-in user has starred this phrase
     let userHasStarred = false;
@@ -81,7 +97,7 @@ export async function GET(
     }
 
     // Return the phrase details along with the star status for the current user
-    return NextResponse.json({ ...phrase, userHasStarred });
+    return NextResponse.json({ ...processedPhrase, userHasStarred });
 
   } catch (error) {
     console.error('Error fetching phrase details:', error);
@@ -97,8 +113,10 @@ export async function PUT(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -215,8 +233,10 @@ export async function DELETE(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -248,16 +268,12 @@ export async function DELETE(
       where: {
         id: phraseId,
         userId: userId // Ensure ownership again
-      },
+      }
     });
 
-    return NextResponse.json({ message: 'Phrase deleted successfully' }, { status: 200 }); // Or 204 No Content
+    return new NextResponse(null, { status: 204 }); // 204 No Content for successful deletion
   } catch (error) {
     console.error('Error deleting phrase:', error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        // Handle case where the record to delete doesn't exist (might happen in race conditions)
-        return NextResponse.json({ error: 'Phrase not found' }, { status: 404 });
-    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

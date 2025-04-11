@@ -1,53 +1,75 @@
 // middleware.ts
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/utils/supabase/middleware' // Path is now correct
+import { createServerClient } from '@supabase/ssr' // Need createServerClient for getUser check
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import type { Database } from '@/types/supabase' // Assuming you have types defined
+import type { Database } from '@/types/supabase' // Use path alias
 
-export async function middleware(req: NextRequest) {
-  // We need to create a response and hand it to the supabase client to be able to modify the response headers.
-  const res = NextResponse.next()
-  // Create a Supabase client configured to use cookies
-  const supabase = createMiddlewareClient<Database>({ req, res })
+export async function middleware(request: NextRequest) {
+  // Update the session
+  const response = await updateSession(request)
 
-  // Refresh session if expired - required for Server Components
-  // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
-  const { data: { session } } = await supabase.auth.getSession()
+  // Check user authentication AFTER updating the session
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        // Middleware shouldn't need to set cookies directly after updateSession
+        // but keep stubs if needed for other logic.
+        set(name: string, value: string, options) {
+          // Ignored in middleware check after updateSession
+        },
+        remove(name: string, options) {
+          // Ignored in middleware check after updateSession
+        },
+      },
+    }
+  )
 
-  // If user is not signed in and the current path is not /login, redirect the user to /login
-  if (!session && req.nextUrl.pathname !== '/login' && !req.nextUrl.pathname.startsWith('/api')) {
-    // Exclude specific public paths if needed, e.g., the root path '/' for landing page
-    if (req.nextUrl.pathname !== '/') {
-      const loginUrl = new URL('/login', req.url)
-      console.log(`Redirecting unauthenticated user from ${req.nextUrl.pathname} to /login`);
-      return NextResponse.redirect(loginUrl)
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // If user is not signed in and the current path is not /login or API routes,
+  // redirect the user to /login
+  if (
+    !user &&
+    request.nextUrl.pathname !== '/login' &&
+    !request.nextUrl.pathname.startsWith('/api') &&
+    !request.nextUrl.pathname.startsWith('/_next') &&
+    request.nextUrl.pathname !== '/favicon.ico'
+  ) {
+    // Allow access to root path '/' even if not logged in
+    if (request.nextUrl.pathname !== '/') {
+        const loginUrl = new URL('/login', request.url)
+        console.log(`Redirecting unauthenticated user from ${request.nextUrl.pathname} to /login`);
+        // Use NextResponse.redirect instead of returning updateSession's response directly
+        return NextResponse.redirect(loginUrl)
     }
   }
 
-  // If user is signed in and the current path is /login, redirect the user to dashboard or home
-  // Optional: Add redirection for authenticated users trying to access /login
-  // if (session && req.nextUrl.pathname === '/login') {
-  //   const dashboardUrl = new URL('/dashboard', req.url)
-  //   return NextResponse.redirect(dashboardUrl)
+  // If user is signed in and tries to access /login, redirect to dashboard (optional)
+  // if (user && request.nextUrl.pathname === '/login') {
+  //   return NextResponse.redirect(new URL('/dashboard', request.url))
   // }
 
-  // IMPORTANT: You must return the Supabase response
-  return res
+  // Return the response from updateSession (contains updated cookies)
+  return response
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - login (the login page itself)
+     * Feel free to modify this pattern to include more paths.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login).*)',
-    // Include root path '/' if it should be handled by the middleware,
-    // adjust the logic inside the middleware to allow unauthenticated access if needed.
-    '/',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Removed explicit /api exclusion here as it's handled in the logic above
+    // Removed explicit /login exclusion here as it's handled in the logic above
   ],
 }

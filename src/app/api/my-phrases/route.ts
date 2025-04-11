@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseRouteHandlerClient } from '@/lib/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { cookies } from 'next/headers';
+import type { Database } from '@/types/supabase';
 
 const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createSupabaseRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

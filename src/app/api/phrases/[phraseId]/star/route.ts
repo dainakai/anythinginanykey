@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { createClient } from '@/utils/supabase/server';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -16,8 +16,10 @@ export async function POST(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,8 +97,10 @@ export async function DELETE(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

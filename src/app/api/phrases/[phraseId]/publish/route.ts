@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseRouteHandlerClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { cookies } from 'next/headers';
+import type { Database } from '@/types/supabase';
+import { createClient } from '@/utils/supabase/server';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -17,9 +17,8 @@ export async function PATCH(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  // Use Supabase client for authentication
-  const cookieStore = cookies();
-  const supabase = createSupabaseRouteHandlerClient({ cookies: () => cookieStore });
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 

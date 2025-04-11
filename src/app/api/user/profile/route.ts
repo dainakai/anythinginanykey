@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { createClient } from '@/utils/supabase/server';
+import { saveUserProfile } from '@/lib/userProfile';
 
 // Update user profile (currently only name)
 export async function PATCH(request: NextRequest) {
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,26 +38,33 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
+    // Supabaseを使用してユーザー情報を更新
+    const { error } = await supabase.auth.updateUser({
       data: {
         name: nameToUpdate,
-      },
-      select: { // Return only necessary fields
-        id: true,
-        name: true,
-        email: true, // Consider if email should be returned
-        image: true,
-      },
+      }
     });
 
-    return NextResponse.json(updatedUser);
+    if (error) {
+      throw error;
+    }
+
+    // データベースにもユーザープロファイル情報を保存
+    await saveUserProfile(userId, nameToUpdate);
+
+    // 更新後のユーザー情報を取得
+    const { data: { user: updatedUser } } = await supabase.auth.getUser();
+
+    // フロントエンドに必要な形式で返す
+    return NextResponse.json({
+      id: updatedUser?.id,
+      name: updatedUser?.user_metadata?.name || nameToUpdate,
+      email: updatedUser?.email,
+      image: updatedUser?.user_metadata?.avatar_url
+    });
 
   } catch (error) {
     console.error('Error updating user profile:', error);
-     if (error instanceof Prisma.PrismaClientValidationError) {
-        return NextResponse.json({ error: 'Database validation error.', details: error.message }, { status: 400 });
-    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { createSupabaseRouteHandlerClient } from '@/lib/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 import { parseAbcNotation } from '@/lib/abcParser';
 import { cookies } from 'next/headers';
+import type { Database } from '@/types/supabase';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  const supabase = createSupabaseRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

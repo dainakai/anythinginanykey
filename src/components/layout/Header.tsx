@@ -12,7 +12,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 
 const ListItem = React.forwardRef<
   React.ElementRef<"a">,
@@ -42,7 +42,7 @@ const ListItem = React.forwardRef<
 ListItem.displayName = "ListItem"
 
 const Header = async () => {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const navLinks = [

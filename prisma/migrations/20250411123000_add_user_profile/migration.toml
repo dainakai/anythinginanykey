@@ -1,0 +1,17 @@
+# This is an empty Prisma Migration file
+
+# Please edit this file by adding migration SQL between the three backticks as required
+# This should correspond with the schema.prisma file content
+
+# migration_name = "20250411123000_add_user_profile"
+# migration_sql = '''
+# -- CreateTable
+# CREATE TABLE "UserProfile" (
+#   "id" TEXT NOT NULL,
+#   "name" TEXT,
+#   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+#   "updatedAt" TIMESTAMP(3) NOT NULL,
+# 
+#   CONSTRAINT "UserProfile_pkey" PRIMARY KEY ("id")
+# );
+# '''

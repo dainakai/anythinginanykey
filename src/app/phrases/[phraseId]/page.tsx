@@ -4,10 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // Import useRouter
 import dynamic from 'next/dynamic';
 import Link from 'next/link'; // Import Link for navigation
-import { useSession } from 'next-auth/react'; // Import useSession to get user data
 import Image from 'next/image'; // Import next/image
 // Import necessary icons
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase'; // Use path alias
 
 // Helper function to get semitone offset from C
 // Handles key notations like "C", "Gm", "Bb", "F#m", etc.
@@ -94,8 +96,8 @@ interface PhraseData {
 const PhraseDetailPage: React.FC = () => {
     const params = useParams();
     const router = useRouter(); // Initialize useRouter
-    const { data: session } = useSession(); // Get session data
-    const loggedInUserId = session?.user?.id;
+    const [currentUser, setCurrentUser] = useState<User | null>(null); // State for Supabase user
+    const [sessionLoading, setSessionLoading] = useState(true); // Loading state for session
     const phraseId = params?.phraseId as string; // Get phrase ID using the directory name
 
     const [phraseData, setPhraseData] = useState<PhraseData | null>(null);
@@ -115,6 +117,26 @@ const PhraseDetailPage: React.FC = () => {
     const [deleteCommentError, setDeleteCommentError] = useState<string | null>(null);
     const [updatingPhraseId, setUpdatingPhraseId] = useState<string | null>(null); // 公開状態更新中ID
     const [publishError, setPublishError] = useState<string | null>(null); // 公開状態更新エラー
+
+    // Fetch Supabase session
+    useEffect(() => {
+      const getUserSession = async () => {
+        setSessionLoading(true);
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          setCurrentUser(session?.user ?? null);
+        } catch (error) {
+          console.error('Error fetching session:', error);
+          setCurrentUser(null);
+        } finally {
+          setSessionLoading(false);
+        }
+      };
+      getUserSession();
+    }, []);
+
+    const loggedInUserId = currentUser?.id;
 
     // --- Fetch phrase data --- (useCallbackでラップ)
     const fetchPhrase = useCallback(async () => {
@@ -246,7 +268,7 @@ const PhraseDetailPage: React.FC = () => {
 
     // --- Star Toggle Handler ---
     const handleStarToggle = async () => {
-        if (!session || !phraseData || isStarrting) return; // Need session and phrase data
+        if (!currentUser || !phraseData || isStarrting) return; // Use currentUser
 
         setIsStarrting(true);
         setStarError(null);
@@ -302,7 +324,7 @@ const PhraseDetailPage: React.FC = () => {
 
     // --- Fork Handler ---
     const handleFork = async () => {
-        if (!session || !phraseId || isForking) return;
+        if (!currentUser || !phraseId || isForking) return; // Use currentUser
 
         setIsForking(true);
         setForkError(null);
@@ -406,10 +428,10 @@ const PhraseDetailPage: React.FC = () => {
     // ----------------------------- 
 
     // Determine if the current user is the owner
-    const isOwner = !!session && !!phraseData && phraseData.user?.id === loggedInUserId;
+    const isOwner = !!currentUser && !!phraseData && phraseData.user?.id === loggedInUserId;
 
     // --- Render Logic ---
-    if (isLoading) {
+    if (isLoading || sessionLoading) {
         return <div className="container mx-auto p-4">読み込み中...</div>;
     }
 
@@ -433,7 +455,7 @@ const PhraseDetailPage: React.FC = () => {
                 {/* Button Group - Adjusted for responsiveness */}
                 <div className="flex items-center flex-wrap gap-2 sm:gap-3">
                      {/* --- Star Button --- */}
-                     {session && phraseData && (
+                     {currentUser && phraseData && (
                         <button
                             onClick={handleStarToggle}
                             disabled={isStarrting}
@@ -452,7 +474,7 @@ const PhraseDetailPage: React.FC = () => {
                     )}
                     {/* ------------------- */}
                     {/* --- Fork Button (Show if logged in and not owner) --- */}
-                    {session && !isOwner && (
+                    {currentUser && !isOwner && (
                         <button
                             onClick={handleFork}
                             disabled={isForking}
@@ -634,7 +656,7 @@ const PhraseDetailPage: React.FC = () => {
                 <h2 className="text-xl font-semibold mb-4">コメント ({phraseData?.comments?.length ?? 0})</h2>
 
                 {/* --- Comment Form (Only show if logged in) --- */}
-                {session && (
+                {currentUser && (
                     <form onSubmit={handleCommentSubmit} className="mb-6">
                         <label htmlFor="comment-input" className="block text-sm font-medium text-gray-700 mb-1">
                             コメントを追加
@@ -661,7 +683,7 @@ const PhraseDetailPage: React.FC = () => {
                         </div>
                     </form>
                 )}
-                {!session && (
+                {!currentUser && (
                      <p className="text-gray-500 text-sm mb-6">コメントするには<Link href="/login" className="text-blue-600 hover:underline">ログイン</Link>が必要です。</p>
                 )}
                 {/* -------------------------------------------- */}

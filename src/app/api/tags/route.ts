@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma, Tag } from '@prisma/client'; // Import Tag type
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 
 // GET /api/tags - Fetch available tags for the user and preset tags
 export async function GET(_request: Request) {
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   // Although tags aren't strictly user-owned in the current setup,
   // fetching tags associated with the user's phrases + preset tags
@@ -79,9 +82,11 @@ export async function GET(_request: Request) {
 
 // POST /api/tags - Create a new user-defined tag
 export async function POST(request: Request) {
-  const session = await auth();
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session?.user?.id) {
+  if (!user?.id) {
     // Even though user_defined tags aren't directly linked to a user in the schema,
     // require authentication to create tags to prevent abuse.
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

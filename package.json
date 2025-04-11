@@ -15,12 +15,11 @@
     "seed": "npm run seed:compile && npm run seed:run"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.4.1",
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "^5.10.2",
     "@radix-ui/react-navigation-menu": "^1.2.5",
     "@radix-ui/react-slot": "^1.1.2",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "abcjs": "^6.4.4",
     "class-variance-authority": "^0.7.1",

@@ -10,6 +10,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model UserProfile {
+  id        String   @id // Supabase Auth user ID
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Phrase {
   id           String   @id @default(cuid())
   abcNotation  String

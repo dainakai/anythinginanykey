@@ -1,155 +1,81 @@
-# Anything in AnyKey
+# Anything in Any Keys
 
-ジャズなどのインプロヴィゼーションを行うミュージシャン向けのフレーズ管理・共有サービス「Anything in AnyKey」のリポジトリです。
+オリジナルフレーズを任意のキーで演奏できるようにするアプリケーションです。
 
-## 特徴
+## プロジェクト構成
 
-- ABC notation形式でのフレーズ登録・管理
-- 全12キーへの自動移調表示
-- タグによるフレーズの分類・検索
-- ユーザー定義タグの管理 (追加・削除)
-- プリセットタグの提供
-- Googleアカウントによる認証 (Supabase Auth 経由)
+このプロジェクトはNext.js、Supabase（認証）、およびPrisma（データベース）を使用しています。
 
-## 技術スタック
+## セットアップと実行方法
 
-- **フレームワーク:** Next.js (App Router)
-- **言語:** TypeScript
-- **データベース:** PostgreSQL (ローカル開発時は Docker, 本番は Supabase DB)
-- **ORM:** Prisma
-- **認証:** Supabase Auth (@supabase/supabase-js, @supabase/auth-helpers-nextjs)
-- **UI:** Tailwind CSS
-- **楽譜描画:** abcjs
-- **コンテナ:** Docker, Docker Compose (ローカル開発環境)
+```bash
+# 依存関係のインストール
+npm install
 
-## 開発環境セットアップ
+# 開発サーバーの起動
+npm run dev
 
-### 必要なもの
+# ビルドと本番環境での実行
+npm run build
+npm start
 
-- Node.js (v20推奨)
-- Docker Desktop (ローカル DB 利用時)
-- Supabase アカウント (認証、データベース用)
+# Dockerでの実行
+docker-compose up --build
+```
 
-### 手順
+## セットアップに関する注意事項
 
-1.  **リポジトリのクローン:**
-    ```bash
-    git clone https://github.com/dainakai/anythinginanykeys.git
-    cd anythinginanykeys
-    ```
+初回実行時に以下のエラーが発生した場合：
+```
+ERROR: relation "public.UserProfile" does not exist
+```
 
-2.  **環境変数の設定:**
-    `.env.example` をコピーして `.env` ファイルを作成します。
-    ```bash
-    cp .env.example .env
-    ```
-    `.env` ファイルを開き、以下の項目を設定してください:
+以下のコマンドを実行してデータベースマイグレーションを適用してください：
 
-    **Supabase 関連:**
-    - `NEXT_PUBLIC_SUPABASE_URL`: あなたの Supabase プロジェクトの URL (Project Settings > API)
-    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: あなたの Supabase プロジェクトの `anon` public キー (Project Settings > API)
-    - `SUPABASE_SERVICE_ROLE_KEY`: (オプション) あなたの Supabase プロジェクトの `service_role` secret キー (Project Settings > API)。サーバーサイドで管理者権限が必要な場合に使用します。
+```bash
+# 手動でのマイグレーション適用
+npx prisma migrate deploy
 
-    **データベース接続:**
-    Supabase プロジェクトのデータベースを使用する場合:
-    - `DATABASE_URL`: Supabase データベースの接続文字列 (Project Settings > Database > Connection string > URI)。Prisma が直接データベースにアクセスするために使用します。
-    ローカルの Docker PostgreSQL コンテナを使用する場合 (デフォルト):
-    - `DATABASE_URL="postgresql://user:password@db:5432/mydatabase?schema=public"`
-    - `POSTGRES_PASSWORD`: 任意のパスワード (デフォルト: `password`)。上記 `DATABASE_URL` と合わせてください。
+# または、開発環境でのマイグレーション
+npx prisma migrate dev
+```
 
-3.  **依存関係のインストール:**
-    ```bash
-    npm install
-    ```
+## 認証について
 
-4.  **Dockerコンテナの起動 (ローカル DB 利用時):**
-    ローカルの PostgreSQL データベースを使用する場合のみ実行します。
-    ```bash
-    docker-compose up --build -d
-    ```
+このプロジェクトはSupabase認証を使用しています。Next-Auth認証システムからの移行が完了しています。
 
-5.  **データベースマイグレーション:**
-    Supabase DB またはローカル DB に対してスキーマを適用します。
-    ```bash
-    # Supabase DB または localhost:5433 (docker-compose.yml 参照) に接続できる状態で実行
-    npx prisma migrate dev
-    ```
-    *注意:* マイグレーションを `web` コンテナ内で実行したい場合は `docker-compose exec web npx prisma migrate dev` を使用します。
+ミドルウェア（`src/middleware.ts`）は以下の役割を担います：
+- ユーザーの認証状態をチェック
+- 未認証ユーザーをログインページにリダイレクト
 
-6.  **(初回のみ) プリセットタグの投入:**
-    アプリケーションで共通利用するプリセットタグをデータベースに登録します。
-    ```bash
-    npm run seed
-    ```
-    (ローカル DB の場合、`docker-compose exec web npm run seed` でコンテナ内で実行します)
+ユーザープロファイルの更新は、ログイン成功時に `/api/auth/profile` APIルートで行われます。これは、Next.jsのミドルウェア（Edge Runtime）ではPrisma Clientを直接使用できないためです。
 
-7.  **開発サーバーの起動:**
-    ```bash
-    npm run dev
-    ```
+## 技術的な制約事項
 
-8.  **アクセス:**
-    ブラウザで `http://localhost:3000` にアクセスします。
+- **Edge RuntimeとPrisma**: Next.jsのミドルウェア、Edge API Routes、Edge Functionsなどの環境では、標準のPrisma Clientは動作しません。これらの環境でデータベースアクセスが必要な場合は、以下のいずれかを検討してください：
+  - API Routesを使用してデータベース操作を行う
+  - Prisma Accelerateを使用する（有料）
+  - Prisma Driver Adaptersを使用する
 
-### 便利なコマンド
+## 開発ガイドライン
 
-- **コンテナの停止 (ローカル DB):** `docker-compose down`
-- **ローカル DB のリセット:**
-  ```bash
-  docker-compose down -v # ボリュームごと削除
-  docker-compose up --build -d
-  docker-compose exec web npx prisma migrate reset --force # スキーマ再適用
-  docker-compose exec web npm run seed # プリセットタグ再投入
-  ```
-- **Prisma Studio (データベースGUI):**
-  Supabase DB の場合は Supabase Studio を使用します。
-  ローカル DB の場合:
-  `docker-compose.yml` で `web` サービスのポート `5555` が公開されています。
-  ```bash
-  docker-compose exec web npx prisma studio
-  ```
-  その後、ブラウザで `http://localhost:5555` にアクセスします。
+1. 新機能を開発する前に、必ず既存のコードパターンを確認してください
+2. Supabase認証を活用し、認証関連の実装はSupabaseクライアントを使用してください
+3. データモデルの変更を行う場合は、Prismaスキーマを更新し、マイグレーションを行ってください
+4. ミドルウェア内ではPrisma Clientを使用しないでください
 
-## 機能概要
+## 注意点
 
-- **ダッシュボード (`/dashboard`):**
-  - ログインユーザーが登録したフレーズを一覧表示します。
-  - フレーズの公開/非公開設定を切り替えられます。
-  - フレーズのページネーション、ソート（新着順/古い順）、タグによるフィルタリング（「タグなし」含む）が可能です。
-  - 各フレーズカードのタグをクリックしてもフィルタリングできます。
-  - 「新しいフレーズを作成」ボタンからフレーズ登録ページへ遷移します。
-  - 「タグを管理」ボタンからタグ管理ページへ遷移します。
-  - 「スター付きフレーズ」ボタンからスター一覧ページへ遷移します。
-  - プロフィール名（表示名）を編集できます。
-- **グローバルライブラリ (`/global`):**
-  - 他のユーザーが公開設定しているフレーズを一覧表示します。
-  - ページネーション、ソート（新着順/スター数順）、タグによるフィルタリングが可能です。
-  - 各フレーズカードに作者情報、スター数、フォークボタンが表示されます。
-  - スターボタンでフレーズにスターを付けたり外したりできます（ログイン時）。
-  - フォークボタンでフレーズを自分のライブラリにコピーできます（ログイン時、自分のフレーズ以外）。
-- **スター付きフレーズ一覧 (`/dashboard/starred`):**
-  - ログインユーザーがスターを付けたフレーズを一覧表示します。
-  - ページネーション、ソート（スター登録順/スター数順/作成日順）、タグによるフィルタリングが可能です。
-  - 各フレーズカードにスター解除ボタン、フォークボタン（自分のフレーズ以外）が表示されます。
-- **フレーズ詳細 (`/phrases/[id]`):**
-  - フレーズの ABC Notation、メタデータ（キー、コメント、タグ等）、作者情報を表示します。
-  - 全12キーに移調された楽譜を表示します。
-  - ログインユーザーはフレーズにスターを付けたり外したり、コメントを投稿したりできます。
-  - 自分のコメントは削除できます。
-  - 自分が所有者の場合のみ、編集ボタン、削除ボタンが表示されます。
-  - 自分が所有者でない場合、フォークボタンが表示されます。
-- **フレーズ登録 (`/phrases/new`):**
-  - ABC Notation、コメント、タグ（カンマ区切り）を入力して新しいフレーズを作成します。
-  - ABC Notation のリアルタイムプレビューと構文チェックが行われます。
-  - タグ入力時には既存のタグがサジェストされます。
-- **フレーズ編集 (`/phrases/[id]/edit`):**
-  - 既存のフレーズ情報を編集します。
-  - 登録時と同様のプレビュー、バリデーション、タグサジェスト機能があります。
-- **タグ管理 (`/dashboard/tags`):**
-  - プリセットタグとユーザー定義タグを一覧表示します。
-  - 新しいユーザー定義タグを作成できます。
-  - ユーザー定義タグを削除できます（関連するフレーズは削除されません）。
+- Prismaモデルの変更を行った場合は、`npx prisma migrate dev`を実行してマイグレーションファイルを生成してください
+- 環境変数は`.env.local`に設定する必要があります
+- Supabaseの認証設定は、SupabaseダッシュボードのAuth設定で行ってください
 
-## 今後の開発予定
+## データベース構造
 
-Issue や `docs/tasks.md` を参照してください。
+Supabase認証への移行に伴い、以下のテーブル構造になっています：
+
+- `UserProfile`: ユーザープロファイル情報（Supabaseユーザーと連携）
+- `Phrase`: フレーズデータ
+- `Tag`: タグ情報
+- `Star`: スター（お気に入り）情報
+- `Comment`: コメント情報
