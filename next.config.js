@@ -26,11 +26,6 @@ const nextConfig = {
           aggregateTimeout: 300, // 変更をまとめて処理するまでの待機時間
         };
       }
-
-      // Edge Runtimeで動作する場合はいくつかのNodeモジュールをハンドリング
-      if (isServer) {
-        config.externals.push('@neondatabase/serverless', 'pg');
-      }
       
       return config;
     },

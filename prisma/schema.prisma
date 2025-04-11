@@ -3,14 +3,13 @@
 
 generator client {
   provider = "prisma-client-js"
-  // Cloudflare Edge RuntimeでPrismaを動作させるための設定
-  previewFeatures = ["driverAdapters"]
+  // Cloudflare Edge RuntimeでのPrisma対応のためにAccelerateを使用
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // 直接接続できない環境用の設定（Cloudflare Workers/Pagesなど）
+  // Prisma Accelerate用の設定
   directUrl = env("DIRECT_URL")
 }
 
