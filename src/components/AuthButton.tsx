@@ -1,19 +1,98 @@
 // src/components/AuthButton.tsx
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import type { User, SupabaseClient } from '@supabase/supabase-js'; // Import Supabase User and Client types
+import { useEffect, useState } from 'react';
+import type { Database } from '@/types/supabase';
 
-export default function AuthButton() {
-  const { data: session } = useSession();
+interface AuthButtonProps {
+  user?: User | null; // Optional user prop, will fetch if not provided
+}
+
+export default function AuthButton({ user: propUser }: AuthButtonProps) {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(propUser ?? null);
+  const [_loading, setLoading] = useState(!propUser); // renamed to _loading to avoid linting error
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
+  
+  // Initialize Supabase client only on the client side
+  useEffect(() => {
+    setSupabase(createClient());
+  }, []);
+  
+  // If user not provided via props, fetch from Supabase
+  useEffect(() => {
+    if (propUser) {
+      setUser(propUser);
+      return;
+    }
+    
+    if (!supabase) return; // Skip if supabase client not initialized
+    
+    const fetchUser = async () => {
+      setLoading(true);
+      try {
+        const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+        setUser(fetchedUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [propUser, supabase]);
+
+  const handleSignIn = async () => {
+    if (!supabase) return;
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    });
+    if (error) {
+      console.error('Error signing in with Google:', error.message);
+      // Optionally, redirect to login with error or display message
+      router.push('/login?error=signin_failed');
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error.message);
+      // Handle error appropriately
+    } else {
+      // Redirect to home page and refresh to update server components
+      router.push('/');
+      router.refresh();
+    }
+  };
 
   const commonButtonStyles = "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ease-in-out";
   const signInStyles = "bg-indigo-600 text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500";
   const signOutStyles = "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white";
 
-  if (session) {
+  // Use the passed user prop instead of useSession
+  if (user) {
     return (
       <button
-        onClick={() => signOut({ callbackUrl: '/' })}
+        onClick={handleSignOut}
         className={`${commonButtonStyles} ${signOutStyles}`}
       >
         Sign out
@@ -22,7 +101,7 @@ export default function AuthButton() {
   }
   return (
     <button
-      onClick={() => signIn('google')}
+      onClick={handleSignIn}
       className={`${commonButtonStyles} ${signInStyles}`}
     >
       Sign in

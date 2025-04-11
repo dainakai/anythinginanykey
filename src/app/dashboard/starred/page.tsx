@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client';
 import PaginationControls from '@/components/PaginationControls';
-import { useSession } from 'next-auth/react';
-import Image from 'next/image';
+import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
+
 
 // Interface for starred phrases (similar to GlobalPhrase, but userHasStarred is implicitly true)
 interface StarredPhrase {
@@ -19,11 +20,7 @@ interface StarredPhrase {
   tags: Tag[];
   starCount: number;
   isPublic: boolean;
-  user: { // Author info
-    id: string;
-    name: string | null;
-    image: string | null;
-  } | null;
+  userId: string; // just the userId for mapping to Supabase user
 }
 
 interface PaginationInfo {
@@ -39,10 +36,43 @@ interface FilterInfo {
 
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
+// Helper function to get user (client-side)
+function useSupabaseUser() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient(); // Create client instance
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      setLoading(true);
+      try {
+        const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+        setUser(fetchedUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]); // Dependency array includes supabase instance
+
+  return { user, loading };
+}
+
 function StarredPhrasesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { user: currentUser, loading: userLoading } = useSupabaseUser();
 
   const [phrases, setPhrases] = useState<StarredPhrase[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -131,7 +161,7 @@ function StarredPhrasesContent() {
 
   // --- Star Toggle Handler (Same logic as global, but assumes initially starred) ---
    const handleStarToggle = async (phraseId: string, _currentStarCount: number) => {
-    if (!session) {
+    if (!currentUser) {
       alert('操作にはログインが必要です。');
       router.push('/login');
       return;
@@ -166,7 +196,7 @@ function StarredPhrasesContent() {
 
   // --- Fork Handler (Same logic as global) ---
    const handleFork = async (phraseId: string) => {
-    if (!session) {
+    if (!currentUser) {
         alert('フレーズをフォークするにはログインが必要です。');
         router.push('/login');
         return;
@@ -232,7 +262,7 @@ function StarredPhrasesContent() {
         </div>
       </div>
 
-      {loading && <p>読み込み中...</p>}
+      {(loading || userLoading) && <p>読み込み中...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
       {!loading && !error && phrases.length === 0 && (
@@ -247,7 +277,7 @@ function StarredPhrasesContent() {
                 const renderParams = { scale: 1.3 };
                 const starStatus = starringStatus[phrase.id] || { loading: false, error: null };
                 const forkStatus = forkingStatus[phrase.id] || { loading: false, error: null };
-                const isOwnPhrase = session?.user?.id === phrase.user?.id;
+                const isOwnPhrase = currentUser?.id === phrase.userId;
 
                 return (
                   <div key={phrase.id} className="border rounded-lg p-4 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
@@ -265,16 +295,11 @@ function StarredPhrasesContent() {
                     </div>
                     <p className="text-sm text-gray-600 mb-1">キー: {phrase.originalKey}</p>
                     {phrase.comment && <p className="text-sm text-gray-700 mb-2 truncate">コメント: {phrase.comment}</p>}
-                     {phrase.user && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                            {phrase.user.image ? (
-                                <Image src={phrase.user.image} alt={phrase.user.name || 'Author'} width={20} height={20} className="rounded-full" />
-                            ) : (
-                                <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span>
-                            )}
-                            <span>{phrase.user.name || '匿名ユーザー'}</span>
-                        </div>
-                    )}
+                     {/* 作者情報表示（Supabaseではresolveする必要あり） */}
+                     <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                        <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span>
+                        <span>{phrase.userId}</span>
+                     </div>
                      <div className="mb-3">
                       {phrase.tags.map(tag => (
                         <button
@@ -293,10 +318,10 @@ function StarredPhrasesContent() {
                          {/* Star Button (Here, clicking always means unstar) */}
                          <button
                             onClick={() => handleStarToggle(phrase.id, phrase.starCount)}
-                            disabled={!session || starStatus.loading}
-                            className={`flex items-center px-2 py-1 border rounded transition-colors text-sm disabled:opacity-50 ${!session ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'border-yellow-500 bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
+                            disabled={!currentUser || starStatus.loading}
+                            className={`flex items-center px-2 py-1 border rounded transition-colors text-sm disabled:opacity-50 ${!currentUser ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'border-yellow-500 bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
                             aria-label="スターを外す"
-                            title={session ? "スターを外す" : "ログインが必要です"}
+                            title={currentUser ? "スターを外す" : "ログインが必要です"}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 mr-1 ${starStatus.loading ? 'animate-spin text-gray-400' : 'text-yellow-500'}`} viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -306,7 +331,7 @@ function StarredPhrasesContent() {
                         </button>
 
                          {/* Fork Button (Show if logged in and not own phrase) */}
-                         {!isOwnPhrase && session && (
+                         {!isOwnPhrase && currentUser && (
                             <button
                                 onClick={() => handleFork(phrase.id)}
                                 disabled={forkStatus.loading}

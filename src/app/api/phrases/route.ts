@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { auth } from "@/auth";
+import { createClient } from '@/utils/supabase/server';
 import { parseAbcNotation } from '@/lib/abcParser';
+
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
-  const session = await auth();
 
-  if (!session || !session.user?.id) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = user.id;
 
   try {
     const body = await request.json();
@@ -38,10 +41,10 @@ export async function POST(request: Request) {
     // --- Process Tags --- Find existing or create new tags
     const tagConnectOrCreate = tagNames.map(name => ({
         where: { name }, // Find tag by unique name
-        create: { name, type: 'user_defined', userId }, // Create if not found
+        create: { name, type: 'user_defined', userId },
     }));
 
-    // --- Create Phrase in DB --- (Now including tag connection)
+    // --- Create Phrase in DB ---
     const newPhrase = await prisma.phrase.create({
         data: {
             abcNotation,
@@ -49,15 +52,14 @@ export async function POST(request: Request) {
             comment: comment || null,
             userId,
             tags: {
-                connectOrCreate: tagConnectOrCreate, // Use connectOrCreate for tags
+                connectOrCreate: tagConnectOrCreate,
             }
         },
-        include: { // Optionally include tags in the response
+        include: {
             tags: true,
         }
     });
 
-    // Return the full created phrase object including tags
     return NextResponse.json(newPhrase, { status: 201 });
 
   } catch (error) {
@@ -71,7 +73,22 @@ export async function POST(request: Request) {
   }
 }
 
-// You might want to add a GET handler later to fetch phrases
+// GET handler example (needs implementation)
 // export async function GET(request: Request) {
-//   // ... implementation ...
+//   const cookieStore = cookies();
+//   const supabase = createSupabaseRouteHandlerClient({ cookies: () => cookieStore });
+//   const { data: { user } } = await supabase.auth.getUser();
+
+//   if (!user) {
+//     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+//   }
+
+//   // Fetch phrases for the logged-in user
+//   const phrases = await prisma.phrase.findMany({
+//       where: { userId: user.id },
+//       include: { tags: true },
+//       orderBy: { createdAt: 'desc' },
+//   });
+
+//   return NextResponse.json(phrases);
 // }

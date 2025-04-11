@@ -2,24 +2,55 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/utils/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export default function ProfileSettingsPage() {
-  const { data: session, update } = useSession(); // `update` 関数を取得
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [editingName, setEditingName] = useState<string>('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Supabaseクライアントの初期化とユーザー情報の取得
   useEffect(() => {
-    if (session?.user?.name) {
-      setEditingName(session.user.name);
-    }
-  }, [session]);
+    const supabase = createClient();
+    
+    const fetchUser = async () => {
+      setLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        if (user?.user_metadata?.name) {
+          setEditingName(user.user_metadata.name);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+
+    // auth状態の変更を監視
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user?.user_metadata?.name) {
+        setEditingName(session.user.user_metadata.name);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editingName.trim() || isUpdatingProfile || editingName.trim() === session?.user?.name) return;
+    const currentName = user?.user_metadata?.name || '';
+    if (!editingName.trim() || isUpdatingProfile || editingName.trim() === currentName) return;
 
     setIsUpdatingProfile(true);
     setProfileError(null);
@@ -39,8 +70,10 @@ export default function ProfileSettingsPage() {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      // セッション情報を更新
-      await update({ name: editingName.trim() });
+      // Supabaseセッションは自動更新されるため、改めて現在のユーザー情報を取得
+      const supabase = createClient();
+      const { data: { user: updatedUser } } = await supabase.auth.getUser();
+      setUser(updatedUser);
 
       setSuccessMessage('プロフィール名を更新しました！');
 
@@ -52,8 +85,12 @@ export default function ProfileSettingsPage() {
     }
   };
 
-  if (!session) {
-    return <div>読み込み中または未認証...</div>; // 認証状態のハンドリング
+  if (loading) {
+    return <div>読み込み中...</div>;
+  }
+
+  if (!user) {
+    return <div>未認証です。ログインしてください。</div>;
   }
 
   return (
@@ -76,7 +113,7 @@ export default function ProfileSettingsPage() {
             />
             <button
               type="submit"
-              disabled={isUpdatingProfile || !editingName.trim() || editingName.trim() === session.user?.name}
+              disabled={isUpdatingProfile || !editingName.trim() || editingName.trim() === user?.user_metadata?.name}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
               {isUpdatingProfile ? '保存中...' : '保存'}

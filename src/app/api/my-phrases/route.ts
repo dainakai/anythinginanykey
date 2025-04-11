@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth'; // Assuming auth setup exists
-import { prisma } from '@/lib/prisma'; // Import prisma directly
+import { createClient } from '@/utils/supabase/server';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+
 
 const DEFAULT_PAGE_LIMIT = 9; // Number of phrases per page
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
 export async function GET(request: Request) {
-  const session = await auth();
 
-  if (!session?.user?.id) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -33,7 +36,7 @@ export async function GET(request: Request) {
   // Add more sort options if needed
 
   const whereClause: Prisma.PhraseWhereInput = {
-    userId: session.user.id,
+    userId: user.id,
   };
 
   if (tagFilter) {
@@ -81,7 +84,7 @@ export async function GET(request: Request) {
     const allUserTags = await prisma.tag.findMany({
         where: {
             phrases: {
-                some: { userId: session.user.id }
+                some: { userId: user.id }
             }
         },
         distinct: ['name']

@@ -10,57 +10,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique // Make email optional for providers that don't guarantee it
-  emailVerified DateTime? // Add emailVerified field
-  image         String?   // Add image field
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  phrases       Phrase[]
-  accounts      Account[] // Add relation to Account
-  sessions      Session[] // Add relation to Session
-  stars         Star[]    // Add relation to Star model
-  comments      Comment[] // Add relation to Comment model
-}
-
-// Add Account model
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-// Add Session model
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// Add VerificationToken model
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
+model UserProfile {
+  id        String   @id // Supabase Auth user ID
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Phrase {
@@ -73,8 +27,7 @@ model Phrase {
   forkedFromId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
+  userId       String   // Changed from relation to String for Supabase Auth user ID
   tags         Tag[]
   stars        Star[]
   comments     Comment[]
@@ -86,30 +39,26 @@ model Tag {
   type      String   // "preset" or "user_defined"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  userId    String?
+  userId    String?  // Changed from relation to String? for Supabase Auth user ID
   phrases   Phrase[]
 }
 
-// Add Star model
 model Star {
-  userId    String
+  userId    String   // Changed from relation to String for Supabase Auth user ID
   phraseId  String
   createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
 
   @@id([userId, phraseId]) // Composite primary key
 }
 
-// Add Comment model
 model Comment {
   id        String   @id @default(cuid())
   content   String
   createdAt DateTime @default(now())
-  userId    String
+  userId    String   // Changed from relation to String for Supabase Auth user ID
   phraseId  String
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
 }

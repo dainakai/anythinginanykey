@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { createClient } from '@/utils/supabase/server';
+import { getUserProfile } from '@/lib/userProfile';
 
 // Define context type with Promise for params
 interface RouteContext {
@@ -16,8 +17,10 @@ export async function POST(
   const { params } = context; // Access params Promise from context
   const { phraseId } = await params; // Await params to get the actual value
 
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Supabaseを使用してユーザー認証情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -63,19 +66,23 @@ export async function POST(
         content: content,
         userId: userId,
         phraseId: phraseId,
-      },
-      include: { // Include user details in the response
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          }
-        }
       }
     });
 
-    return NextResponse.json(newComment, { status: 201 });
+    // ユーザープロファイル情報を取得
+    const userProfile = await getUserProfile(userId);
+
+    // Add user details 
+    const commentWithUser = {
+      ...newComment,
+      user: {
+        id: userId,
+        name: userProfile?.name || `ユーザー ${userId.substring(0, 6)}`,
+        image: null
+      }
+    };
+
+    return NextResponse.json(commentWithUser, { status: 201 });
 
   } catch (error) {
     console.error('Error adding comment:', error);

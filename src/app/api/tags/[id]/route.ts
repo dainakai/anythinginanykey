@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
@@ -8,16 +8,20 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
+  // Supabase認証を使用してユーザー情報を取得
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // paramsをawaitして取得
   const { id: tagId } = await params;
 
-  if (!session?.user?.id) {
+  if (!user?.id) {
     // Require authentication to delete tags
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
   if (!tagId) {
-    return NextResponse.json({ error: 'Tag ID is required' }, { status: 400 });
+    return NextResponse.json({ error: 'タグIDが必要です' }, { status: 400 });
   }
 
   try {
@@ -27,12 +31,17 @@ export async function DELETE(
     });
 
     if (!tagToDelete) {
-      return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
+      return NextResponse.json({ error: 'タグが見つかりません' }, { status: 404 });
     }
 
     // IMPORTANT: Prevent deletion of preset tags
     if (tagToDelete.type === 'preset') {
-      return NextResponse.json({ error: 'Preset tags cannot be deleted' }, { status: 403 }); // 403 Forbidden
+      return NextResponse.json({ error: 'プリセットタグは削除できません' }, { status: 403 }); // 403 Forbidden
+    }
+
+    // Check if the tag belongs to the authenticated user
+    if (tagToDelete.userId && tagToDelete.userId !== user.id) {
+      return NextResponse.json({ error: 'このタグを削除する権限がありません' }, { status: 403 });
     }
 
     // Note: The relation between Phrase and Tag is many-to-many.
@@ -54,12 +63,12 @@ export async function DELETE(
       // Handle specific Prisma errors if necessary, e.g., P2025 (Record to delete does not exist)
       // which can happen in race conditions or if ID is invalid, despite the initial check.
       if (error.code === 'P2025') {
-           return NextResponse.json({ error: 'Tag not found or already deleted' }, { status: 404 });
+           return NextResponse.json({ error: 'タグが見つからないか、すでに削除されています' }, { status: 404 });
       }
       // Log other potential Prisma errors
       console.error('Prisma Error Code:', error.code);
     }
 
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }

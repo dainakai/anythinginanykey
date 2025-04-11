@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AbcNotationRenderer from '@/components/AbcNotationRenderer';
 import { Tag } from '@prisma/client'; // Assuming Tag type is available
 import PaginationControls from '@/components/PaginationControls';
-import { useSession } from 'next-auth/react'; // Import useSession
 import Image from 'next/image'; // Import next/image
+import { createClient } from '@/utils/supabase/client'; // Use new util path
+import type { User } from '@supabase/supabase-js'; // Import Supabase User type
 
 // Define interface based on /api/phrases/global response
 interface GlobalPhrase {
@@ -23,6 +24,7 @@ interface GlobalPhrase {
     name: string | null;
     image: string | null;
   } | null;
+  userHasStarred?: boolean; // Optional, indicates if the current logged-in user starred this
   // isPublic is implicitly true for global phrases
 }
 
@@ -39,10 +41,43 @@ interface FilterInfo {
 
 const UNTAGGED_FILTER_VALUE = '__untagged__';
 
+// Helper function to get user (client-side)
+function useSupabaseUser() {
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const supabase = createClient(); // Create client instance
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            setLoading(true);
+            try {
+                const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+                setUser(fetchedUser);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUser();
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
+    }, [supabase]); // Dependency array includes supabase instance
+
+    return { user, loading };
+}
+
 function GlobalPhrasesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession(); // Get session data
+  const { user: currentUser, loading: userLoading } = useSupabaseUser(); // Get Supabase user
 
   const [phrases, setPhrases] = useState<GlobalPhrase[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -64,8 +99,12 @@ function GlobalPhrasesContent() {
     if (tag) params.set('tag', tag);
     params.set('sort', sort);
 
+    // Pass current user ID to fetch starred status (if API supports it)
+    if (currentUser?.id) {
+      params.set('userId', currentUser.id);
+    }
+
     try {
-      // Use the global phrases API endpoint
       const response = await fetch(`/api/phrases/global?${params.toString()}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -77,14 +116,14 @@ function GlobalPhrasesContent() {
     } catch (e: unknown) {
       console.error('Failed to fetch global phrases:', e);
       const errorMessage = e instanceof Error ? e.message : String(e);
-      setError(`グローバルフレーズの読み込みに失敗しました: ${errorMessage}`);
+      setError(`フレーズの読み込みに失敗しました: ${errorMessage}`);
       setPhrases([]);
       setPagination(null);
       setFilters(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchGlobalPhrases(currentPage, currentTag, currentSort);
@@ -94,11 +133,7 @@ function GlobalPhrasesContent() {
   const updateSearchParams = (newParams: Record<string, string>) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
     Object.entries(newParams).forEach(([key, value]) => {
-      if (value) {
-        current.set(key, value);
-      } else {
-        current.delete(key);
-      }
+      current.set(key, value || ''); // Ensure value is string
     });
     if (newParams.tag !== undefined || newParams.sort !== undefined) {
         current.set('page', '1');
@@ -124,103 +159,59 @@ function GlobalPhrasesContent() {
     updateSearchParams({ sort: event.target.value });
   };
 
-  // --- Star Toggle Handler for Global List ---
-  const handleStarToggle = async (phraseId: string, currentStarCount: number) => {
-    if (!session) {
-      // Optionally redirect to login or show a message
-      alert('スターを付けるにはログインが必要です。');
+  // --- Star Toggle Handler (use currentUser) ---
+  const handleStarToggle = async (phraseId: string, currentStarredStatus: boolean) => {
+    if (!currentUser) {
       router.push('/login');
       return;
     }
-
     setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: true, error: null } }));
-
-    // Determine current starred status by checking if a Star record exists for this user/phrase
-    // This requires an API call or prior knowledge. Here, we assume unknown and try POST first.
-    // A more robust approach might involve fetching starred status initially or trying DELETE first if POST fails.
-
-    // Let's try POST first, assuming not starred initially for this list view
-    let method = 'POST';
-    let _optimisticStarCount = currentStarCount + 1;
-
-    // We don't have `userHasStarred` here, so we guess based on the action
-    // This isn't ideal for optimistic UI, but we'll update with server response.
-
+    const method = currentStarredStatus ? 'DELETE' : 'POST';
     try {
-        const response = await fetch(`/api/phrases/${phraseId}/star`, { method });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            // If POST fails because it's already starred (e.g., 409 Conflict or similar)
-            // try DELETE instead. We need the API to potentially return a specific status code.
-            // For now, just throw the error.
-             if (response.status === 409) { // Example: 409 Conflict if already starred
-                 method = 'DELETE';
-                 _optimisticStarCount = currentStarCount -1;
-                 const delResponse = await fetch(`/api/phrases/${phraseId}/star`, { method });
-                 if (!delResponse.ok) {
-                     const delErrorData = await delResponse.json();
-                     throw new Error(delErrorData.error || `DELETE failed: ${delResponse.status}`);
-                 }
-                 const result = await delResponse.json();
-                 // Update with actual count from DELETE response
-                 setPhrases(prev => prev.map(p => p.id === phraseId ? { ...p, starCount: result.starCount /* userHasStarred unknown */ } : p));
-                 setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: null } }));
-                 return; // Exit after successful DELETE
-             }
-
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        // Update with actual count from POST response
-        setPhrases(prev => prev.map(p => p.id === phraseId ? { ...p, starCount: result.starCount /* userHasStarred unknown */ } : p));
-
-    } catch (error) {
-        console.error('Error toggling star on global list:', error);
-        setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: `スター操作失敗: ${error instanceof Error ? error.message : String(error)}` } }));
-        // No easy way to revert optimistic count without knowing initial state
+      const response = await fetch(`/api/phrases/${phraseId}/star`, { method });
+      if (!response.ok) {
+        throw await response.json();
+      }
+      const result = await response.json();
+      // Update phrase in local state
+      setPhrases(prev => prev.map(p => p.id === phraseId ? { ...p, userHasStarred: !currentStarredStatus, starCount: result.starCount } : p));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました';
+      setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: errorMessage } }));
     } finally {
-        // Only clear loading if no error occurred OR if the error is handled above (like retry)
-        if (!starringStatus[phraseId]?.error) {
-             setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: null } }));
-        }
-        // Re-fetch might be better here if complex state management is undesired
+      setStarringStatus(prev => ({ ...prev, [phraseId]: { ...prev[phraseId], loading: false } }));
     }
-};
+  };
 
-  // --- Fork Handler for Global List ---
+  // --- Fork Handler (use currentUser) ---
   const handleFork = async (phraseId: string) => {
-    if (!session) {
-        alert('フレーズをフォークするにはログインが必要です。');
-        router.push('/login');
-        return;
+    if (!currentUser) {
+      router.push('/login');
+      return;
     }
-
     setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: true, error: null } }));
-
     try {
-        const response = await fetch(`/api/phrases/${phraseId}/fork`, { method: 'POST' });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            // Handle specific errors, e.g., user trying to fork their own public phrase?
-            // Or maybe the phrase became private?
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-
-        const _forkedPhrase = await response.json();
-        alert('フレーズをライブラリにフォークしました！');
-        // Optionally navigate or just provide feedback
-        // router.push(`/phrases/${_forkedPhrase.id}`);
-        setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: null } })); // Clear loading on success
-
-    } catch (error) {
-        console.error('Error forking phrase from global list:', error);
-        setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: `フォーク失敗: ${error instanceof Error ? error.message : String(error)}` } }));
+      const response = await fetch(`/api/phrases/${phraseId}/fork`, { method: 'POST' });
+      if (!response.ok) {
+        throw await response.json();
+      }
+      const forkedPhrase = await response.json();
+      router.push(`/phrases/${forkedPhrase.id}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました';
+      setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: errorMessage } }));
+    } finally {
+      setForkingStatus(prev => ({ ...prev, [phraseId]: { ...prev[phraseId], loading: false } }));
     }
-    // Do not clear loading in finally, only on success or explicit error handling
-};
+  };
+
+  if (loading || userLoading) {
+    return <div>Loading phrases...</div>; // Combined loading state
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -261,14 +252,11 @@ function GlobalPhrasesContent() {
         </div>
       </div>
 
-      {loading && <p>読み込み中...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-
-      {!loading && !error && phrases.length === 0 && (
+      {!loading && phrases.length === 0 && (
         <p>条件に一致する公開フレーズが見つかりません。</p>
       )}
 
-      {!loading && !error && phrases.length > 0 && (
+      {!loading && phrases.length > 0 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {phrases.map((phrase) => {
@@ -276,7 +264,7 @@ function GlobalPhrasesContent() {
                 const renderParams = { scale: 1.3 };
                 const starStatus = starringStatus[phrase.id] || { loading: false, error: null };
                 const forkStatus = forkingStatus[phrase.id] || { loading: false, error: null };
-                const isOwnPhrase = session?.user?.id === phrase.user?.id; // Check if it's user's own phrase
+                const isOwnPhrase = currentUser?.id === phrase.user?.id; // Check if it's user's own phrase
 
                 return (
                   <div key={phrase.id} className="border rounded-lg p-4 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
@@ -323,21 +311,20 @@ function GlobalPhrasesContent() {
                     <div className="flex justify-between items-center mt-3">
                         {/* Star Count Display & Button */}
                         <button
-                            onClick={() => handleStarToggle(phrase.id, phrase.starCount)}
-                            disabled={!session || starStatus.loading} // Disable if not logged in or loading
-                            className={`flex items-center px-2 py-1 border rounded transition-colors text-sm disabled:opacity-50 ${!session ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-100'}`}
+                            onClick={() => handleStarToggle(phrase.id, phrase.userHasStarred ?? false)}
+                            disabled={!currentUser || starStatus.loading} // Disable if not logged in or loading
+                            className={`flex items-center px-2 py-1 border rounded transition-colors text-sm disabled:opacity-50 ${!currentUser ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'border-gray-300 text-gray-600 hover:bg-gray-100'}`}
                             aria-label="スターを付ける/外す"
-                            title={session ? "スターを付ける/外す" : "ログインが必要です"}
+                            title={currentUser ? "スターを付ける/外す" : "ログインが必要です"}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 mr-1 ${starStatus.loading ? 'animate-spin text-gray-400' : 'text-gray-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 mr-1 ${starStatus.loading ? 'animate-spin text-gray-400' : (phrase.userHasStarred ? 'text-yellow-500' : 'text-gray-400')}`} viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
-                            <span>{phrase.starCount}</span>
-                            {starStatus.loading && <span className="ml-1 text-xs">(...)</span>}
+                            <span>{starStatus.loading ? '...' : (phrase.starCount ?? 0)}</span>
                         </button>
 
                         {/* --- Fork Button (Show if logged in and not own phrase) --- */}
-                        {session && !isOwnPhrase && (
+                        {currentUser && !isOwnPhrase && (
                             <button
                                 onClick={() => handleFork(phrase.id)}
                                 disabled={forkStatus.loading}

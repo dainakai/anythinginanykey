@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getUserProfiles } from '@/lib/userProfile';
 
 const DEFAULT_PAGE_LIMIT = 9;
 const UNTAGGED_FILTER_VALUE = '__untagged__';
@@ -53,16 +54,30 @@ export async function GET(request: Request) {
         take: limit,
         include: {
           tags: true, // Include associated tags
-          user: { // Include basic user info (author)
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            }
-          }
         },
       })
     ]);
+
+    // フレーズ作成者のユーザーIDを収集
+    const userIds = phrases.map(phrase => phrase.userId);
+    
+    // ユーザープロファイル情報を取得
+    const userProfiles = await getUserProfiles(userIds);
+
+    // Phraseデータを変換して、フロントエンドに必要な形式に整える
+    const processedPhrases = phrases.map(phrase => {
+      // 各フレーズの作成者情報を追加
+      const userProfile = userProfiles[phrase.userId];
+      
+      return {
+        ...phrase,
+        user: {
+          id: phrase.userId,
+          name: userProfile?.name || `ユーザー ${phrase.userId.substring(0, 6)}`,
+          image: null // 画像は不要
+        }
+      };
+    });
 
     const totalPages = Math.ceil(totalPhrases / limit);
 
@@ -77,7 +92,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      phrases,
+      phrases: processedPhrases,
       pagination: {
         currentPage: page,
         totalPages,
