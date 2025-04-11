@@ -175,7 +175,7 @@ function GlobalPhrasesContent() {
       const result = await response.json();
       // Update phrase in local state
       setPhrases(prev => prev.map(p => p.id === phraseId ? { ...p, userHasStarred: !currentStarredStatus, starCount: result.starCount } : p));
-    } catch (err: Error) {
+    } catch (err: unknown) {
       setStarringStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: err.error || 'エラーが発生しました' } }));
     } finally {
       setStarringStatus(prev => ({ ...prev, [phraseId]: { ...prev[phraseId], loading: false } }));
@@ -196,7 +196,7 @@ function GlobalPhrasesContent() {
       }
       const forkedPhrase = await response.json();
       router.push(`/phrases/${forkedPhrase.id}`);
-    } catch (err: Error) {
+    } catch (err: unknown) {
       setForkingStatus(prev => ({ ...prev, [phraseId]: { loading: false, error: err.error || 'エラーが発生しました' } }));
     } finally {
       setForkingStatus(prev => ({ ...prev, [phraseId]: { ...prev[phraseId], loading: false } }));
