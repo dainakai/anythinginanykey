@@ -1,16 +1,50 @@
 // src/components/AuthButton.tsx
 "use client";
 
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js'; // Import Supabase User type
+import { useEffect, useState } from 'react';
 
 interface AuthButtonProps {
-  user: User | null; // Accept user object or null
+  user?: User | null; // Optional user prop, will fetch if not provided
 }
 
-export default function AuthButton({ user }: AuthButtonProps) {
+export default function AuthButton({ user: propUser }: AuthButtonProps) {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(propUser ?? null);
+  const [loading, setLoading] = useState(!propUser);
+  const supabase = createClient();
+  
+  // If user not provided via props, fetch from Supabase
+  useEffect(() => {
+    if (propUser) {
+      setUser(propUser);
+      return;
+    }
+    
+    const fetchUser = async () => {
+      setLoading(true);
+      try {
+        const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+        setUser(fetchedUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [propUser, supabase]);
 
   const handleSignIn = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
