@@ -91,9 +91,7 @@ export async function GET(request: Request) {
           createdAt: true,
           starCount: true,
           isPublic: true, // Include public status
-          user: { // Include author info
-            select: { id: true, name: true, image: true }
-          },
+          userId: true, // Include userId instead of user object
           tags: { // Include tags
             select: { id: true, name: true }
           },

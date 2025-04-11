@@ -20,11 +20,7 @@ interface StarredPhrase {
   tags: Tag[];
   starCount: number;
   isPublic: boolean;
-  user: { // Author info
-    id: string;
-    name: string | null;
-    image: string | null;
-  } | null;
+  userId: string; // just the userId for mapping to Supabase user
 }
 
 interface PaginationInfo {
@@ -281,7 +277,7 @@ function StarredPhrasesContent() {
                 const renderParams = { scale: 1.3 };
                 const starStatus = starringStatus[phrase.id] || { loading: false, error: null };
                 const forkStatus = forkingStatus[phrase.id] || { loading: false, error: null };
-                const isOwnPhrase = currentUser?.id === phrase.user?.id;
+                const isOwnPhrase = currentUser?.id === phrase.userId;
 
                 return (
                   <div key={phrase.id} className="border rounded-lg p-4 shadow hover:shadow-md transition-shadow flex flex-col bg-white">
@@ -299,16 +295,11 @@ function StarredPhrasesContent() {
                     </div>
                     <p className="text-sm text-gray-600 mb-1">キー: {phrase.originalKey}</p>
                     {phrase.comment && <p className="text-sm text-gray-700 mb-2 truncate">コメント: {phrase.comment}</p>}
-                     {phrase.user && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                            {phrase.user.image ? (
-                                <Image src={phrase.user.image} alt={phrase.user.name || 'Author'} width={20} height={20} className="rounded-full" />
-                            ) : (
-                                <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span>
-                            )}
-                            <span>{phrase.user.name || '匿名ユーザー'}</span>
-                        </div>
-                    )}
+                     {/* 作者情報表示（Supabaseではresolveする必要あり） */}
+                     <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                        <span className="h-5 w-5 rounded-full bg-gray-300 inline-block"></span>
+                        <span>{phrase.userId}</span>
+                     </div>
                      <div className="mb-3">
                       {phrase.tags.map(tag => (
                         <button
