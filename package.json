@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate --no-engine && next build",
-    "build:cloudflare": "npx @cloudflare/next-on-pages",
-    "start": "next start -p $PORT",
+    "build:cloudflare": "prisma generate --no-engine && npx @cloudflare/next-on-pages@1",
+    "start": "next start",
     "lint": "next lint",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate --no-engine",
