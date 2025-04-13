@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+import prisma from '../src/lib/prisma'; // 相対パスでsrc/lib/prismaをインポート
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient(); // 削除
 
 // Define preset tags
 const presetTags = [
@@ -61,7 +62,4 @@ main()
   .catch((e) => {
     console.error(e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
