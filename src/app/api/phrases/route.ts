@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { createClient } from '@/utils/supabase/server';
 import { parseAbcNotation } from '@/lib/abcParser';
 import prisma from '@/lib/prisma';
