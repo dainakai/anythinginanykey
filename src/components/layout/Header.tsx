@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AuthButton from '@/components/AuthButton';
-import { Cog6ToothIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, QuestionMarkCircleIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,6 +13,15 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import { createClient } from '@/utils/supabase/server';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 const ListItem = React.forwardRef<
   React.ElementRef<"a">,
@@ -45,6 +54,8 @@ const Header = async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const logoHref = user ? '/dashboard' : '/';
+
   const navLinks = [
     { href: '/dashboard', label: 'マイフレーズ' },
     { href: '/global', label: 'みんなのフレーズ' },
@@ -68,10 +79,11 @@ const Header = async () => {
   return (
     <header className="bg-gray-800 text-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="text-xl font-bold hover:text-gray-300">
+        <Link href={logoHref} className="text-xl font-bold hover:text-gray-300">
           Anything in AnyKey
         </Link>
 
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-2">
           {user && (
             <>
@@ -107,11 +119,6 @@ const Header = async () => {
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
-
-              <Link href="/settings" className="p-2 text-gray-300 hover:text-white transition-colors duration-200 ease-in-out" title="設定">
-                 <Cog6ToothIcon className="h-6 w-6" aria-hidden="true" />
-                 <span className="sr-only">設定</span>
-              </Link>
             </>
           )}
           <div className="ml-2">
@@ -119,8 +126,59 @@ const Header = async () => {
           </div>
         </nav>
 
-        <div className="md:hidden flex items-center">
-           <AuthButton user={user} />
+        {/* Mobile Navigation & Auth Button */}
+        <div className="md:hidden flex items-center space-x-2">
+          <div className="ml-auto">
+            <AuthButton user={user} />
+          </div>
+          {user && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-gray-700">
+                  <Bars3Icon className="h-6 w-6" />
+                  <span className="sr-only">メニューを開く</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-gray-800 text-white border-l border-gray-700 p-0">
+                <SheetHeader className="p-4 border-b border-gray-700">
+                  <SheetTitle className="text-white text-lg">メニュー</SheetTitle>
+                </SheetHeader>
+                <div className="p-4 space-y-4">
+                  {navLinks.map((link) => (
+                    <SheetClose asChild key={link.href}>
+                       <Link
+                         href={link.href}
+                         className="block p-3 rounded-md text-base font-medium text-white hover:bg-gray-700"
+                       >
+                         {link.label}
+                       </Link>
+                    </SheetClose>
+                  ))}
+                  <SheetClose asChild>
+                    <Link
+                      href="/settings"
+                      className="block p-3 rounded-md text-base font-medium text-white hover:bg-gray-700"
+                    >
+                      <Cog6ToothIcon className="w-5 h-5 mr-2 inline-block" /> 設定
+                    </Link>
+                  </SheetClose>
+                  <div>
+                    <h3 className="px-3 pt-2 pb-1 text-sm font-semibold text-gray-400">ヘルプ</h3>
+                     {helpLinks.map((link) => (
+                       <SheetClose asChild key={link.title}>
+                         <Link
+                           href={link.href}
+                           className="block p-3 rounded-md text-base font-medium text-white hover:bg-gray-700"
+                         >
+                           {link.title}
+                         </Link>
+                       </SheetClose>
+                     ))}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </div>
     </header>
