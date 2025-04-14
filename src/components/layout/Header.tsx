@@ -62,7 +62,7 @@ const Header = async () => {
   ];
 
   const helpLinks = [
-    { href: '/tutorial', title: '初回チュートリアル', description: 'Anything in AnyKey の基本的な使い方を学びます。' },
+    { href: '/', title: 'アプリ紹介 (LP)', description: 'Anything in AnyKey の機能や使い方を紹介します。' },
     { href: '/help/abc-notation', title: 'ABC Notation ガイド', description: 'ABC Notation の書き方を詳しく解説します。' },
     { href: '/help/faq', title: 'よくある質問', description: 'サービスに関するよくある質問と回答です。' },
   ];

@@ -61,8 +61,9 @@ const InteractiveAbcEditor: React.FC<InteractiveAbcEditorProps> = ({ initialAbc 
           左側のテキストエリアにABC記法を入力または編集すると、右側に楽譜がリアルタイムで表示されます。
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid md:grid-cols-2 gap-4">
-        <div>
+      <CardContent className="flex flex-col md:flex-row gap-4">
+        {/* Input Area - Order 2 on mobile, Order 1 on desktop */}
+        <div className="w-full md:w-1/2 order-2 md:order-1">
           <label htmlFor="abc-input" className="block text-sm font-medium mb-1">ABC Notation 入力:</label>
           <Textarea
             ref={textareaRef}
@@ -74,7 +75,8 @@ const InteractiveAbcEditor: React.FC<InteractiveAbcEditorProps> = ({ initialAbc 
             placeholder="ここにABC Notationを入力..."
           />
         </div>
-        <div>
+        {/* Preview Area - Order 1 on mobile, Order 2 on desktop */}
+        <div className="w-full md:w-1/2 order-1 md:order-2">
           <label htmlFor="abc-preview" className="block text-sm font-medium mb-1">楽譜プレビュー:</label>
           <div
             id="abc-preview"
