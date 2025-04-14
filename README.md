@@ -143,6 +143,38 @@ npx prisma migrate dev
 - 環境変数は`.env.local`に設定する必要があります
 - Supabaseの認証設定は、SupabaseダッシュボードのAuth設定で行ってください
 
+## プリセットタグのシード実行
+
+`/prisma/seed.ts` で定義されているプリセットタグをデータベースに投入するには、以下の手順を実行します。
+
+1.  **本番環境の接続設定**: 本番環境のデータベース接続情報 (`DATABASE_URL`) を環境変数として設定します。Cloudflare環境の場合は、環境変数設定ページで行います。特にCloudflare D1を使用する場合は `prisma/schema.prisma` の設定を確認してください。
+2.  **Prisma Migrateの実行**: データベーススキーマを最新に保つため、以下のコマンドを実行します。
+    ```bash
+    npx prisma migrate deploy
+    ```
+3.  **Seedスクリプト実行準備**:
+    - `package.json` に `prisma:seed` スクリプトと `prisma.seed` 設定があることを確認します。
+      ```json
+      {
+        "scripts": {
+          // ...
+          "prisma:seed": "prisma db seed"
+        },
+        "prisma": {
+          "seed": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed.ts"
+        }
+      }
+      ```
+    - 開発依存関係として `ts-node` をインストールします。
+      ```bash
+      npm install -D ts-node @types/node
+      ```
+4.  **Seedスクリプトの実行**: 本番データベースに接続した状態で以下のコマンドを実行します。
+    ```bash
+    npx prisma db seed
+    ```
+    **注意**: このコマンドは本番DBにアクセスできる環境で実行してください。Cloudflareのビルドプロセス中に実行するか、ローカルから本番DBに接続して実行します。
+
 ## データベース構造
 
 Supabase認証への移行に伴い、以下のテーブル構造になっています：

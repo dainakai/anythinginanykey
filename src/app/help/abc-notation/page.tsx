@@ -1,4 +1,4 @@
-// 'use client'; // サーバーコンポーネントに戻す
+'use client'; // コメント解除
 
 export const runtime = 'edge'; // 再度 Edge Runtime を指定
 
@@ -6,12 +6,10 @@ import React from 'react';
 import InteractiveAbcEditor from '@/components/Help/InteractiveAbcEditor';
 // We might still want the markdown guide for detailed explanations
 // import AbcNotationGuide from '@/components/Help/AbcNotationGuide';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'ABC Notation ガイド - Anything in AnyKey',
-  description: 'Anything in AnyKey で使用する ABC Notation の入力方法についてのガイドです。',
-};
+// import AbcEditor from '@/components/Help/AbcEditor'; // Remove unused import
+// import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'; // Unused
+// import { Pencil } from 'lucide-react'; // Unused
+// import AbcNotationRenderer from '@/components/AbcNotationRenderer'; // Unused
 
 export default function AbcNotationHelpPage() {
   // Example ABC notation string

@@ -15,7 +15,7 @@ ENV NODE_ENV=development
 RUN npm cache clean --force && npm install --legacy-peer-deps
 
 # Prisma Accelerate対応のための追加パッケージをインストール
-RUN npm install @prisma/extension-accelerate@0.6.3 --save-exact
+# RUN npm install @prisma/extension-accelerate@0.6.3 --save-exact
 
 # Copy prisma schema
 COPY prisma ./prisma/
