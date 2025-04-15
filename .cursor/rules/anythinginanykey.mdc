@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+- ownerはdainakaiです。
+- あるIssueに取り組むときは、これまで行われてclosedされたIssueやmergeされたPRで行われてきたことや、./docs内のファイルをよく読んでから行うこと。全体のタスクに対する今のタスクの位置づけを理解すること。（もちろん、./docsなども絶対パスで読み込むように。）
+- Issueに取り組むときは、その修正内容をプルリクすることが目標です。プルリクする前にかならず動作確認を行います。
+- 動作確認や、操作方法で非自明な場合や追加の操作が必要なときは必ずREADME.mdに追記して忘れないようにすること。
+- ローカルでの動作確認やテストは必ずdocker-compose up --buildなど、dockerfile経由で行います。でもこのコマンドだけはユーザが行って動作確認するのであなたはビルドする必要ないです。
+- GithubからIssueを取ってきて対処しているタスクで、プルリクして。といったときは、ローカルに作業ブランチを作成しコミット、プッシュし、プルリクも作成してください。プルリクでは説明を細かく記載してください。あなたにはローカルのGitやリモートのGithubを操作する権限があるし、できますのでやってください。
+- NextJSの実装では @https://tech-hint.hatenablog.com/entry/2024/11/07/133604 に注意してください。
