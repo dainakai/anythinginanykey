@@ -99,7 +99,10 @@ export default function NewPhrasePage() {
               id="abcNotation"
               rows={12}
               value={abcNotation}
-              onChange={(e) => setAbcNotation(e.target.value)}
+              onChange={(e) => {
+                  setAbcNotation(e.target.value);
+                  setPreviewError(null); // Reset preview error on change
+              }}
               required
               className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 font-mono"
               placeholder="X:1\nT:タイトル\nM:4/4\nL:1/4\nK:C\nC D E F | G A B c |"
